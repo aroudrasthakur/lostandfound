@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Lost and Found</string>
+    
+    <!-- Authentication -->
+    <string name="sign_in">Sign In</string>
+    <string name="sign_up">Sign Up</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="forgot_password">Forgot Password?</string>
+    
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="search">Search</string>
+    <string name="post_item">Post Item</string>
+    <string name="messages">Messages</string>
+    <string name="profile">Profile</string>
+    
+    <!-- Item Types -->
+    <string name="lost">Lost</string>
+    <string name="found">Found</string>
+    
+    <!-- Actions -->
+    <string name="submit">Submit</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="contact">Contact</string>
+    
+    <!-- Item Details -->
+    <string name="item_name">Item Name</string>
+    <string name="description">Description</string>
+    <string name="category">Category</string>
+    <string name="location">Location</string>
+    <string name="date">Date</string>
+    <string name="add_photo">Add Photo</string>
+    
+    <!-- Messages -->
+    <string name="loading">Loading…</string>
+    <string name="no_items_found">No items found</string>
+    <string name="error_occurred">An error occurred</string>
+</resources>
