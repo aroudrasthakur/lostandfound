@@ -116,4 +116,75 @@ class AuthRepository {
             Result.failure(e)
         }
     }
+    
+    suspend fun getUserById(userId: String): Result<User> {
+        return try {
+            val userDoc = firestore.collection("users")
+                .document(userId)
+                .get()
+                .await()
+            
+            val user = userDoc.toObject(User::class.java) ?: throw Exception("User not found")
+            Result.success(user)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun restrictUser(userId: String): Result<Unit> {
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .update("isRestricted", true)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun unrestrictUser(userId: String): Result<Unit> {
+        return try {
+            firestore.collection("users")
+                .document(userId)
+                .update("isRestricted", false)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun banUser(userId: String): Result<Unit> {
+        return try {
+            // Delete all user's items
+            val lostItems = firestore.collection("lost_items")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            
+            lostItems.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+            
+            val foundItems = firestore.collection("found_items")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            
+            foundItems.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+            
+            // Delete user document
+            firestore.collection("users")
+                .document(userId)
+                .delete()
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

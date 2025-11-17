@@ -49,4 +49,30 @@ class NotificationRepository {
             Result.failure(e)
         }
     }
+    
+    suspend fun sendItemNotification(
+        recipientUserId: String,
+        senderName: String,
+        itemTitle: String,
+        notificationType: String // "have_item" or "claim_item"
+    ): Result<Unit> {
+        return try {
+            val notification = hashMapOf(
+                "recipientUserId" to recipientUserId,
+                "senderName" to senderName,
+                "itemTitle" to itemTitle,
+                "type" to notificationType,
+                "timestamp" to System.currentTimeMillis(),
+                "read" to false
+            )
+            
+            firestore.collection("notifications")
+                .add(notification)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

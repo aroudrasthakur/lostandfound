@@ -7,6 +7,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemCategory
 import com.uta.lostfound.data.model.ItemStatus
+import com.uta.lostfound.data.model.User
 import kotlinx.coroutines.tasks.await
 import java.util.*
 
@@ -18,17 +19,29 @@ object FirebaseDataSeeder {
     private val db = FirebaseFirestore.getInstance()
     
     /**
-     * Add mock lost and found items to Firestore
+     * Add mock lost and found items to Firestore along with mock users
      */
     suspend fun seedMockData(): Result<String> {
         return try {
             Log.d(TAG, "Starting to seed mock data...")
             
+            val mockUsers = createMockUsers()
             val lostItems = createMockLostItems()
             val foundItems = createMockFoundItems()
             
+            var userCount = 0
             var lostCount = 0
             var foundCount = 0
+            
+            // Add mock users first
+            mockUsers.forEach { user ->
+                db.collection("users")
+                    .document(user.uid)
+                    .set(user.toMap())
+                    .await()
+                userCount++
+                Log.d(TAG, "Added mock user: ${user.name}")
+            }
             
             // Add lost items
             lostItems.forEach { item ->
@@ -50,7 +63,7 @@ object FirebaseDataSeeder {
                 Log.d(TAG, "Added found item: ${item.title}")
             }
             
-            val message = "✓ Successfully added $lostCount lost items and $foundCount found items"
+            val message = "✓ Successfully added $userCount mock users, $lostCount lost items and $foundCount found items"
             Log.d(TAG, message)
             Result.success(message)
             
@@ -62,33 +75,225 @@ object FirebaseDataSeeder {
     }
     
     /**
-     * Clear all mock data from Firestore
+     * Clear only mock data from Firestore (preserves user-input data)
+     * Deletes items with IDs starting with "lost_" or "found_" and users with IDs starting with "mock_user_"
      */
     suspend fun clearMockData(): Result<String> {
         return try {
-            Log.d(TAG, "Clearing mock data...")
+            Log.d(TAG, "Clearing mock data only...")
             
-            // Delete lost items
+            var userDeletedCount = 0
+            var lostDeletedCount = 0
+            var foundDeletedCount = 0
+            
+            // Delete mock users (IDs starting with "mock_user_")
+            val userSnapshot = db.collection("users").get().await()
+            userSnapshot.documents.forEach { doc ->
+                if (doc.id.startsWith("mock_user_")) {
+                    doc.reference.delete().await()
+                    userDeletedCount++
+                    Log.d(TAG, "Deleted mock user: ${doc.id}")
+                }
+            }
+            
+            // Delete mock lost items (IDs starting with "lost_")
             val lostSnapshot = db.collection("lost_items").get().await()
             lostSnapshot.documents.forEach { doc ->
-                doc.reference.delete().await()
+                if (doc.id.startsWith("lost_")) {
+                    doc.reference.delete().await()
+                    lostDeletedCount++
+                    Log.d(TAG, "Deleted mock lost item: ${doc.id}")
+                }
             }
             
-            // Delete found items
+            // Delete mock found items (IDs starting with "found_")
             val foundSnapshot = db.collection("found_items").get().await()
             foundSnapshot.documents.forEach { doc ->
-                doc.reference.delete().await()
+                if (doc.id.startsWith("found_")) {
+                    doc.reference.delete().await()
+                    foundDeletedCount++
+                    Log.d(TAG, "Deleted mock found item: ${doc.id}")
+                }
             }
             
-            val message = "✓ Cleared ${lostSnapshot.size()} lost items and ${foundSnapshot.size()} found items"
+            val message = "✓ Cleared $userDeletedCount mock users, $lostDeletedCount mock lost items and $foundDeletedCount mock found items"
             Log.d(TAG, message)
             Result.success(message)
             
         } catch (e: Exception) {
-            val error = "✗ Failed to clear data: ${e.message}"
+            val error = "✗ Failed to clear mock data: ${e.message}"
             Log.e(TAG, error, e)
             Result.failure(e)
         }
+    }
+    
+    private fun createMockUsers(): List<User> {
+        val baseTime = System.currentTimeMillis()
+        
+        return listOf(
+            User(
+                uid = "mock_user_1",
+                name = "John Smith",
+                email = "john.smith@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (30 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_2",
+                name = "Sarah Johnson",
+                email = "sarah.johnson@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (45 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_3",
+                name = "Michael Chen",
+                email = "michael.chen@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (60 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_4",
+                name = "Emily Davis",
+                email = "emily.davis@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (20 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_5",
+                name = "Alex Martinez",
+                email = "alex.martinez@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (25 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_6",
+                name = "Jessica Brown",
+                email = "jessica.brown@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (15 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_7",
+                name = "Robert Wilson",
+                email = "robert.wilson@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (40 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_8",
+                name = "David Lee",
+                email = "david.lee@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (35 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_9",
+                name = "Lisa Anderson",
+                email = "lisa.anderson@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (50 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_10",
+                name = "Kevin Taylor",
+                email = "kevin.taylor@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (55 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_11",
+                name = "Amanda White",
+                email = "amanda.white@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (28 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_12",
+                name = "Christopher Moore",
+                email = "christopher.moore@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (33 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_13",
+                name = "Daniel Garcia",
+                email = "daniel.garcia@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (42 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_14",
+                name = "Rachel Thompson",
+                email = "rachel.thompson@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (48 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_15",
+                name = "Brandon Harris",
+                email = "brandon.harris@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (38 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_16",
+                name = "Nicole Martin",
+                email = "nicole.martin@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (52 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_17",
+                name = "Tyler Jackson",
+                email = "tyler.jackson@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (22 * 24 * 60 * 60 * 1000)
+            ),
+            User(
+                uid = "mock_user_18",
+                name = "Stephanie Clark",
+                email = "stephanie.clark@mock.uta.edu",
+                role = "user",
+                isRestricted = false,
+                fcmToken = "",
+                createdAt = baseTime - (27 * 24 * 60 * 60 * 1000)
+            )
+        )
     }
     
     private fun createMockLostItems(): List<Item> {

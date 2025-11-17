@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.data.repository.ItemRepository
+import com.uta.lostfound.data.repository.NotificationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -13,11 +14,14 @@ data class ItemDetailsUiState(
     val isLoading: Boolean = false,
     val item: Item? = null,
     val error: String? = null,
-    val deleteSuccess: Boolean = false
+    val deleteSuccess: Boolean = false,
+    val notificationSent: Boolean = false,
+    val notificationError: String? = null
 )
 
 class ItemDetailsViewModel : ViewModel() {
     private val itemRepository = ItemRepository()
+    private val notificationRepository = NotificationRepository()
     
     private val _uiState = MutableStateFlow(ItemDetailsUiState())
     val uiState: StateFlow<ItemDetailsUiState> = _uiState
@@ -70,5 +74,38 @@ class ItemDetailsViewModel : ViewModel() {
                 )
             }
         }
+    }
+    
+    fun sendItemNotification(recipientUserId: String, senderName: String, itemTitle: String, notificationType: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, notificationError = null)
+            
+            val result = notificationRepository.sendItemNotification(
+                recipientUserId = recipientUserId,
+                senderName = senderName,
+                itemTitle = itemTitle,
+                notificationType = notificationType
+            )
+            
+            _uiState.value = if (result.isSuccess) {
+                _uiState.value.copy(
+                    isLoading = false,
+                    notificationSent = true,
+                    notificationError = null
+                )
+            } else {
+                _uiState.value.copy(
+                    isLoading = false,
+                    notificationError = result.exceptionOrNull()?.message ?: "Failed to send notification"
+                )
+            }
+        }
+    }
+    
+    fun resetNotificationState() {
+        _uiState.value = _uiState.value.copy(
+            notificationSent = false,
+            notificationError = null
+        )
     }
 }

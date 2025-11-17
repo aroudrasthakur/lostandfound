@@ -372,7 +372,35 @@ service firebase.storage {
 
 Click **"Publish"** to save the rules.
 
-#### Step 7: Rebuild
+#### Step 7: Set Up Admin Users (Optional)
+
+To grant admin access for managing the app:
+
+1. **Create a User Account**
+
+   - Open the app and sign up with an account
+   - Note the user's email address
+
+2. **Assign Admin Role in Firebase Console**
+
+   - Go to Firebase Console → **Firestore Database**
+   - Navigate to **users** collection
+   - Find the user document (search by email in the document data)
+   - Edit the document
+   - Change the `role` field from `"user"` to `"admin"`
+   - Save
+
+3. **Admin Capabilities**
+   - Access Admin Dashboard (gear icon in top bar)
+   - View monthly metrics and statistics
+   - Moderate and delete any reported items
+   - Access Development Tools in Profile tab:
+     - Add Mock Data (18 sample items for testing)
+     - Clear Mock Data (removes only test data, preserves real data)
+
+**Note:** Only users with `role: "admin"` can see the Development Tools section and Admin Dashboard. Regular users will not see these features.
+
+#### Step 8: Rebuild
 
 ```powershell
 .\gradlew clean assembleDebug
@@ -507,7 +535,7 @@ adb shell am start -n com.uta.lostfound/.ui.MainActivity
 
 ## 📦 Adding Mock Data
 
-To test the app with sample data, use the built-in data seeder:
+To test the app with sample data, use the built-in data seeder (Admin only):
 
 ### Using the App
 
@@ -517,16 +545,18 @@ To test the app with sample data, use the built-in data seeder:
    .\gradlew installDebug
    ```
 
-2. **Sign up/Login** to the app
+2. **Sign up/Login** to the app with an admin account
 
 3. **Go to Profile Tab** (bottom navigation, person icon)
 
-4. **In "Development Tools" section**:
+4. **In "Development Tools" section** (visible only to admins):
 
-   - Click **"Add Mock Data"** → Adds 8 lost + 10 found items
-   - Click **"Clear Data"** → Removes all items
+   - Click **"Add Mock Data"** → Adds 8 lost + 10 found items with IDs starting with `lost_` and `found_`
+   - Click **"Clear Mock Data"** → Removes only mock data (IDs starting with `lost_` or `found_`), preserves real user data
 
 5. **Navigate to Lost/Found tabs** to see the data
+
+**Note:** The Development Tools section only appears for users with `role: "admin"` in Firestore. Regular users will not see this section.
 
 ### What Gets Added
 

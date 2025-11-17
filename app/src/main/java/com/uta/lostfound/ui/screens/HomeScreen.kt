@@ -2,6 +2,7 @@ package com.uta.lostfound.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -40,6 +41,7 @@ fun HomeScreen(
     onNavigateToItemDetails: (String) -> Unit,
     onNavigateToAdminDashboard: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToUserProfile: (String) -> Unit,
     loginViewModel: LoginViewModel = viewModel(),
     foundItemsViewModel: FoundItemsViewModel = viewModel()
 ) {
@@ -130,6 +132,7 @@ fun HomeScreen(
                     error = foundItemsState.error,
                     emptyMessage = "No lost items reported yet",
                     onItemClick = onNavigateToItemDetails,
+                    onUserClick = onNavigateToUserProfile,
                     onRefresh = { foundItemsViewModel.loadFoundItems() }
                 )
                 1 -> ItemsList(
@@ -138,6 +141,7 @@ fun HomeScreen(
                     error = foundItemsState.error,
                     emptyMessage = "No found items reported yet",
                     onItemClick = onNavigateToItemDetails,
+                    onUserClick = onNavigateToUserProfile,
                     onRefresh = { foundItemsViewModel.loadFoundItems() }
                 )
                 2 -> ProfileTab(
@@ -159,6 +163,7 @@ fun ItemsList(
     error: String?,
     emptyMessage: String,
     onItemClick: (String) -> Unit,
+    onUserClick: (String) -> Unit,
     onRefresh: () -> Unit
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -195,7 +200,8 @@ fun ItemsList(
                     items(items) { item ->
                         ItemCard(
                             item = item,
-                            onClick = { onItemClick(item.id) }
+                            onClick = { onItemClick(item.id) },
+                            onUserClick = { onUserClick(item.userId) }
                         )
                     }
                 }
@@ -220,7 +226,8 @@ fun ItemsList(
 @Composable
 fun ItemCard(
     item: Item,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onUserClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -286,6 +293,21 @@ fun ItemCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // User name (clickable)
+                Text(
+                    text = "Posted by: ${item.userName}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    modifier = Modifier.clickable(
+                        onClick = onUserClick,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -360,104 +382,106 @@ fun ProfileTab(
         
         Spacer(modifier = Modifier.weight(1f))
         
-        // Mock Data Section
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        // Development Tools Section (Admin Only)
+        if (user?.role == "admin") {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             ) {
-                Text(
-                    text = "Development Tools",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                Text(
-                    text = "Add sample data to test the app",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            isSeeding = true
-                            scope.launch {
-                                FirebaseDataSeeder.seedMockData().fold(
-                                    onSuccess = { message ->
-                                        seedMessage = message
-                                        showMessage = true
-                                        isSeeding = false
-                                    },
-                                    onFailure = { error ->
-                                        seedMessage = "Error: ${error.message}"
-                                        showMessage = true
-                                        isSeeding = false
-                                    }
-                                )
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSeeding
+                    Text(
+                        text = "Development Tools",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "Add sample data to test the app",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (isSeeding) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Add Mock Data")
+                        OutlinedButton(
+                            onClick = {
+                                isSeeding = true
+                                scope.launch {
+                                    FirebaseDataSeeder.seedMockData().fold(
+                                        onSuccess = { message ->
+                                            seedMessage = message
+                                            showMessage = true
+                                            isSeeding = false
+                                        },
+                                        onFailure = { error ->
+                                            seedMessage = "Error: ${error.message}"
+                                            showMessage = true
+                                            isSeeding = false
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSeeding
+                        ) {
+                            if (isSeeding) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text("Add Mock Data")
+                            }
+                        }
+                        
+                        OutlinedButton(
+                            onClick = {
+                                isSeeding = true
+                                scope.launch {
+                                    FirebaseDataSeeder.clearMockData().fold(
+                                        onSuccess = { message ->
+                                            seedMessage = message
+                                            showMessage = true
+                                            isSeeding = false
+                                        },
+                                        onFailure = { error ->
+                                            seedMessage = "Error: ${error.message}"
+                                            showMessage = true
+                                            isSeeding = false
+                                        }
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            enabled = !isSeeding
+                        ) {
+                            Text("Clear Mock Data")
                         }
                     }
                     
-                    OutlinedButton(
-                        onClick = {
-                            isSeeding = true
-                            scope.launch {
-                                FirebaseDataSeeder.clearMockData().fold(
-                                    onSuccess = { message ->
-                                        seedMessage = message
-                                        showMessage = true
-                                        isSeeding = false
-                                    },
-                                    onFailure = { error ->
-                                        seedMessage = "Error: ${error.message}"
-                                        showMessage = true
-                                        isSeeding = false
-                                    }
-                                )
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        enabled = !isSeeding
-                    ) {
-                        Text("Clear Data")
+                    if (showMessage && seedMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = seedMessage!!,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (seedMessage!!.startsWith("✓")) 
+                                MaterialTheme.colorScheme.primary 
+                            else 
+                                MaterialTheme.colorScheme.error
+                        )
                     }
-                }
-                
-                if (showMessage && seedMessage != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = seedMessage!!,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (seedMessage!!.startsWith("✓")) 
-                            MaterialTheme.colorScheme.primary 
-                        else 
-                            MaterialTheme.colorScheme.error
-                    )
                 }
             }
         }

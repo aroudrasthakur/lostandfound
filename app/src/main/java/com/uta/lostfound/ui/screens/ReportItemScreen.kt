@@ -30,6 +30,7 @@ import com.uta.lostfound.data.model.ItemCategory
 import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.data.service.PlaceSuggestion
 import com.uta.lostfound.ui.components.LocationAutocompleteField
+import com.uta.lostfound.viewmodel.LoginViewModel
 import com.uta.lostfound.viewmodel.ReportViewModel
 import java.io.File
 import java.text.SimpleDateFormat
@@ -41,9 +42,12 @@ fun ReportItemScreen(
     itemStatus: ItemStatus,
     onNavigateBack: () -> Unit,
     onNavigateToHome: () -> Unit,
+    loginViewModel: LoginViewModel = viewModel(),
     viewModel: ReportViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val loginUiState by loginViewModel.uiState.collectAsState()
+    val currentUser = loginUiState.currentUser
     
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -317,6 +321,35 @@ fun ReportItemScreen(
                 }
             }
             
+            // Restriction Warning
+            if (currentUser?.isRestricted == true) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Your account has been restricted from posting items. Please contact an administrator for assistance.",
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            
             // Submit Button
             Button(
                 onClick = {
@@ -349,7 +382,8 @@ fun ReportItemScreen(
                 enabled = title.isNotBlank() && 
                          description.isNotBlank() && 
                          location.isNotBlank() &&
-                         !uiState.isLoading
+                         !uiState.isLoading &&
+                         currentUser?.isRestricted != true
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(

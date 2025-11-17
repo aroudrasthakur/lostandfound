@@ -19,6 +19,9 @@ sealed class Screen(val route: String) {
     object ItemDetails : Screen("item_details/{itemId}") {
         fun createRoute(itemId: String) = "item_details/$itemId"
     }
+    object UserProfile : Screen("user_profile/{userId}") {
+        fun createRoute(userId: String) = "user_profile/$userId"
+    }
     object AdminDashboard : Screen("admin_dashboard")
     object AdminModeration : Screen("admin_moderation")
 }
@@ -79,6 +82,9 @@ fun NavGraph(
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                onNavigateToUserProfile = { userId ->
+                    navController.navigate(Screen.UserProfile.createRoute(userId))
                 }
             )
         }
@@ -131,6 +137,24 @@ fun NavGraph(
             val itemId = backStackEntry.arguments?.getString("itemId") ?: return@composable
             ItemDetailsScreen(
                 itemId = itemId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToUserProfile = { userId ->
+                    navController.navigate(Screen.UserProfile.createRoute(userId))
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.UserProfile.route,
+            arguments = listOf(
+                navArgument("userId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+            UserProfileScreen(
+                userId = userId,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

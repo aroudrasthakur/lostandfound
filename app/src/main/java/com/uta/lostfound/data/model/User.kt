@@ -9,6 +9,7 @@ data class User(
     val name: String = "",
     val email: String = "",
     val role: String = "user", // "user" or "admin"
+    val isRestricted: Boolean = false, // true if user is restricted from posting
     val fcmToken: String = "",
     val createdAt: Long = System.currentTimeMillis()
 ) : Parcelable {
@@ -18,6 +19,7 @@ data class User(
             "name" to name,
             "email" to email,
             "role" to role,
+            "isRestricted" to isRestricted,
             "fcmToken" to fcmToken,
             "createdAt" to createdAt
         )

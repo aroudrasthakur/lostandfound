@@ -3,12 +3,15 @@ package com.uta.lostfound.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
@@ -30,6 +33,7 @@ import java.util.*
 fun ItemDetailsScreen(
     itemId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToUserProfile: (String) -> Unit,
     loginViewModel: LoginViewModel = viewModel(),
     viewModel: ItemDetailsViewModel = viewModel()
 ) {
@@ -38,6 +42,7 @@ fun ItemDetailsScreen(
     val uiState by viewModel.uiState.collectAsState()
     
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showNotificationSuccessDialog by remember { mutableStateOf(false) }
     
     // Load item details
     LaunchedEffect(itemId) {
@@ -48,6 +53,13 @@ fun ItemDetailsScreen(
     LaunchedEffect(uiState.deleteSuccess) {
         if (uiState.deleteSuccess) {
             onNavigateBack()
+        }
+    }
+    
+    // Show success dialog when notification is sent
+    LaunchedEffect(uiState.notificationSent) {
+        if (uiState.notificationSent) {
+            showNotificationSuccessDialog = true
         }
     }
     
@@ -68,6 +80,16 @@ fun ItemDetailsScreen(
                 },
                 actions = {
                     if (canDelete && item != null) {
+                        // Edit button (admin only)
+                        if (isAdmin && !isOwner) {
+                            IconButton(onClick = { /* TODO: Implement edit functionality */ }) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Edit",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
@@ -208,7 +230,26 @@ fun ItemDetailsScreen(
                             Text(
                                 text = dateFormat.format(Date(item.date)),
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(bottom = 24.dp)
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                            
+                            // Posted by (clickable)
+                            Text(
+                                text = "Posted By",
+                                style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            Text(
+                                text = item.userName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .padding(bottom = 24.dp)
+                                    .clickable(
+                                        onClick = { onNavigateToUserProfile(item.userId) },
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    )
                             )
                             
                             // Contact Owner Button (if not owner)
@@ -232,6 +273,43 @@ fun ItemDetailsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text("Contact Owner")
+                                }
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                // "I Have the Item" button for LOST items or "Claim Item" for FOUND items
+                                if (currentUser != null) {
+                                    Button(
+                                        onClick = {
+                                            val notificationType = if (item.status.name == "LOST") "have_item" else "claim_item"
+                                            viewModel.sendItemNotification(
+                                                recipientUserId = item.userId,
+                                                senderName = currentUser.name,
+                                                itemTitle = item.title,
+                                                notificationType = notificationType
+                                            )
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        enabled = !uiState.isLoading,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.secondary
+                                        )
+                                    ) {
+                                        if (uiState.isLoading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(20.dp),
+                                                color = MaterialTheme.colorScheme.onSecondary
+                                            )
+                                        } else {
+                                            Icon(
+                                                Icons.Default.Info,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(if (item.status.name == "LOST") "I Have the Item" else "Claim Item")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -266,5 +344,43 @@ fun ItemDetailsScreen(
                 }
             }
         )
+    }
+    
+    // Notification Success Dialog
+    if (showNotificationSuccessDialog && item != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showNotificationSuccessDialog = false
+                viewModel.resetNotificationState()
+            },
+            title = { Text("Notification Sent") },
+            text = { 
+                Text(
+                    if (item.status.name == "LOST") {
+                        "The owner has been notified that you have their item. They will contact you soon!"
+                    } else {
+                        "The finder has been notified of your claim. They will contact you soon!"
+                    }
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNotificationSuccessDialog = false
+                        viewModel.resetNotificationState()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+    
+    // Notification Error Snackbar
+    uiState.notificationError?.let { error ->
+        LaunchedEffect(error) {
+            // You could show a Snackbar here if needed
+            viewModel.resetNotificationState()
+        }
     }
 }
