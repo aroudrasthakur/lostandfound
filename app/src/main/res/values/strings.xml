@@ -42,4 +42,7 @@
     <string name="loading">Loading…</string>
     <string name="no_items_found">No items found</string>
     <string name="error_occurred">An error occurred</string>
+    
+    <!-- Google Places API Key -->
+    <string name="google_maps_key">API_KEY</string>
 </resources>

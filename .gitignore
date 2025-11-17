@@ -39,6 +39,8 @@ local.properties
 .idea/.name
 .idea/compiler.xml
 .idea/misc.xml
+.idea/vcs.xml
+.idea/deploymentTargetDropDown.xml
 
 # Android Studio
 captures/
@@ -64,6 +66,7 @@ google-services.json
 .firebaserc
 firebase-debug.log
 firebase-debug.*.log
+.firebase/
 
 # Signing files
 *.jks
@@ -88,3 +91,26 @@ lint-results.xml
 # Android Profiler
 *.hprof
 
+# Kotlin
+*.kotlin_module
+
+# Navigation files
+navigation.xml
+
+# API Keys (security)
+secrets.properties
+apikey.properties
+
+# Backup files
+*~
+*.bak
+*.backup
+
+# Cache directories
+.cache/
+tmp/
+temp/
+
+# Build outputs
+release/
+debug/

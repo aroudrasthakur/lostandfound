@@ -1,16 +1,16 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("com.google.gms.google-services")
     id("kotlin-parcelize")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.lostandfound.app"
+    namespace = "com.uta.lostfound"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.lostandfound.app"
+        applicationId = "com.uta.lostfound"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -82,6 +82,9 @@ dependencies {
 
     // Google Auth
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+    
+    // Google Places API
+    implementation("com.google.android.libraries.places:places:3.3.0")
 
     // Lifecycle & ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
