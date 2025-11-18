@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemCategory
+import com.uta.lostfound.data.model.User
 import com.uta.lostfound.data.repository.SearchRepository
+import com.uta.lostfound.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -12,22 +14,68 @@ import kotlinx.coroutines.launch
 data class SearchUiState(
     val isLoading: Boolean = false,
     val searchResults: List<Item> = emptyList(),
+    val userResults: List<User> = emptyList(),
     val error: String? = null,
-    val query: String = ""
+    val query: String = "",
+    val searchMode: String = "Items" // "Items" or "Users"
 )
 
 class SearchViewModel : ViewModel() {
     private val searchRepository = SearchRepository()
+    private val userRepository = UserRepository()
     
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState
     
+    fun setSearchMode(mode: String) {
+        _uiState.value = _uiState.value.copy(
+            searchMode = mode,
+            searchResults = emptyList(),
+            userResults = emptyList()
+        )
+        if (_uiState.value.query.isNotBlank()) {
+            if (mode == "Users") {
+                searchUsers(_uiState.value.query)
+            } else {
+                searchAll(_uiState.value.query)
+            }
+        }
+    }
+    
     fun updateQuery(query: String) {
         _uiState.value = _uiState.value.copy(query = query)
         if (query.isNotBlank()) {
-            searchAll(query)
+            if (_uiState.value.searchMode == "Users") {
+                searchUsers(query)
+            } else {
+                searchAll(query)
+            }
         } else {
-            _uiState.value = _uiState.value.copy(searchResults = emptyList())
+            _uiState.value = _uiState.value.copy(
+                searchResults = emptyList(),
+                userResults = emptyList()
+            )
+        }
+    }
+    
+    fun searchUsers(query: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
+            val result = userRepository.searchUsers(query)
+            
+            _uiState.value = if (result.isSuccess) {
+                _uiState.value.copy(
+                    isLoading = false,
+                    userResults = result.getOrNull() ?: emptyList(),
+                    error = null
+                )
+            } else {
+                _uiState.value.copy(
+                    isLoading = false,
+                    error = result.exceptionOrNull()?.message ?: "User search failed"
+                )
+            }
         }
     }
     

@@ -20,11 +20,16 @@ class FoundItemsViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(FoundItemsUiState())
     val uiState: StateFlow<FoundItemsUiState> = _uiState
 
+    // Don't load items in init - let the UI trigger the load when ready
     init {
-        loadFoundItems()
+        // Initialize with empty state, ready to load
+        _uiState.value = _uiState.value.copy(isLoading = false)
     }
 
     fun loadFoundItems() {
+        // Prevent concurrent loads
+        if (_uiState.value.isLoading) return
+        
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             

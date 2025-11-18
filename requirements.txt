@@ -12,6 +12,9 @@
 # - Android SDK API 24-34
 # - Gradle 8.2.0 (wrapper included)
 # - Git
+# - Node.js 18+ (for Firebase CLI)
+# - Firebase CLI (npm install -g firebase-tools)
+# - PowerShell 5.1+ (Windows) or Bash (Unix)
 
 # ==============================================================================
 # GRADLE DEPENDENCIES (from build.gradle.kts)

@@ -312,6 +312,8 @@ object FirebaseDataSeeder {
                 userName = "John Smith",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (2 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (2 * 24 * 60 * 60 * 1000)
             ),
@@ -327,6 +329,8 @@ object FirebaseDataSeeder {
                 userName = "Sarah Johnson",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (1 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (1 * 24 * 60 * 60 * 1000)
             ),
@@ -342,6 +346,8 @@ object FirebaseDataSeeder {
                 userName = "Michael Chen",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (3 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (3 * 24 * 60 * 60 * 1000)
             ),
@@ -357,6 +363,8 @@ object FirebaseDataSeeder {
                 userName = "Emily Davis",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (5 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (5 * 24 * 60 * 60 * 1000)
             ),
@@ -372,6 +380,8 @@ object FirebaseDataSeeder {
                 userName = "Alex Martinez",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (4 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (4 * 24 * 60 * 60 * 1000)
             ),
@@ -387,6 +397,8 @@ object FirebaseDataSeeder {
                 userName = "Jessica Brown",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (6 * 60 * 60 * 1000),
                 updatedAt = baseTime - (6 * 60 * 60 * 1000)
             ),
@@ -402,6 +414,8 @@ object FirebaseDataSeeder {
                 userName = "Robert Wilson",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (12 * 60 * 60 * 1000),
                 updatedAt = baseTime - (12 * 60 * 60 * 1000)
             ),
@@ -417,6 +431,8 @@ object FirebaseDataSeeder {
                 userName = "David Lee",
                 status = ItemStatus.LOST,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (7 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (7 * 24 * 60 * 60 * 1000)
             )
@@ -439,6 +455,8 @@ object FirebaseDataSeeder {
                 userName = "Lisa Anderson",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (1 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (1 * 24 * 60 * 60 * 1000)
             ),
@@ -454,6 +472,8 @@ object FirebaseDataSeeder {
                 userName = "Kevin Taylor",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (2 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (2 * 24 * 60 * 60 * 1000)
             ),
@@ -469,6 +489,8 @@ object FirebaseDataSeeder {
                 userName = "Amanda White",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (3 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (3 * 24 * 60 * 60 * 1000)
             ),
@@ -484,6 +506,8 @@ object FirebaseDataSeeder {
                 userName = "Christopher Moore",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (4 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (4 * 24 * 60 * 60 * 1000)
             ),
@@ -499,6 +523,8 @@ object FirebaseDataSeeder {
                 userName = "Daniel Garcia",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (5 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (5 * 24 * 60 * 60 * 1000)
             ),
@@ -514,6 +540,8 @@ object FirebaseDataSeeder {
                 userName = "Rachel Thompson",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (6 * 24 * 60 * 60 * 1000),
                 updatedAt = baseTime - (6 * 24 * 60 * 60 * 1000)
             ),
@@ -529,6 +557,8 @@ object FirebaseDataSeeder {
                 userName = "Brandon Harris",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (8 * 60 * 60 * 1000),
                 updatedAt = baseTime - (8 * 60 * 60 * 1000)
             ),
@@ -544,6 +574,8 @@ object FirebaseDataSeeder {
                 userName = "Nicole Martin",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (10 * 60 * 60 * 1000),
                 updatedAt = baseTime - (10 * 60 * 60 * 1000)
             ),
@@ -559,6 +591,8 @@ object FirebaseDataSeeder {
                 userName = "Tyler Jackson",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (2 * 60 * 60 * 1000),
                 updatedAt = baseTime - (2 * 60 * 60 * 1000)
             ),
@@ -574,9 +608,12 @@ object FirebaseDataSeeder {
                 userName = "Stephanie Clark",
                 status = ItemStatus.FOUND,
                 isActive = true,
+                isMatched = false,
+                matchId = "",
                 createdAt = baseTime - (4 * 60 * 60 * 1000),
                 updatedAt = baseTime - (4 * 60 * 60 * 1000)
             )
         )
     }
 }
+

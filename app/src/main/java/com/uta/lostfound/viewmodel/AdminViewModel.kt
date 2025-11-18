@@ -29,6 +29,10 @@ class AdminViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
+            // First update metrics to get latest data
+            metricsRepository.updateMetrics()
+            
+            // Then load the updated metrics
             val result = metricsRepository.getMonthlyMetrics()
             
             _uiState.value = if (result.isSuccess) {
@@ -44,6 +48,10 @@ class AdminViewModel : ViewModel() {
                 )
             }
         }
+    }
+    
+    fun refreshMetrics() {
+        loadMetrics()
     }
     
     fun loadLostItems() {

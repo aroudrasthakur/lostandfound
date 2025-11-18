@@ -63,6 +63,7 @@ class ItemRepository {
         return try {
             val snapshot = firestore.collection("found_items")
                 .whereEqualTo("isActive", true)
+                .whereEqualTo("isMatched", false)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -82,6 +83,7 @@ class ItemRepository {
         return try {
             val snapshot = firestore.collection("lost_items")
                 .whereEqualTo("isActive", true)
+                .whereEqualTo("isMatched", false)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()

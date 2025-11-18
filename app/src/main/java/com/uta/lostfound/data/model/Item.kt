@@ -16,6 +16,8 @@ data class Item(
     val userName: String = "",
     val status: ItemStatus = ItemStatus.LOST,
     val isActive: Boolean = true,
+    val isMatched: Boolean = false,
+    val matchId: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) : Parcelable {
@@ -32,6 +34,8 @@ data class Item(
             "userName" to userName,
             "status" to status.name,
             "isActive" to isActive,
+            "isMatched" to isMatched,
+            "matchId" to matchId,
             "createdAt" to createdAt,
             "updatedAt" to updatedAt
         )

@@ -1,43 +1,26 @@
 package com.uta.lostfound.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 
-private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    onPrimary = OnPrimary,
-    primaryContainer = PrimaryVariant,
-    onPrimaryContainer = OnPrimary,
-    secondary = Secondary,
-    onSecondary = OnSecondary,
-    secondaryContainer = Color(0xFFE8E4FF),
-    onSecondaryContainer = Color(0xFF1A1A1A),
-    tertiary = Tertiary,
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFE0F7F5),
-    onTertiaryContainer = Color(0xFF1A1A1A),
-    background = Background,
-    onBackground = OnBackground,
-    surface = Surface,
-    onSurface = OnSurface,
-    surfaceVariant = SurfaceVariant,
-    onSurfaceVariant = OnSurfaceVariant,
-    outline = Color(0xFFE0E0E0),
-    outlineVariant = Color(0xFFF5F5F5),
-    error = Error,
-    onError = OnError,
-    errorContainer = Color(0xFFFFEBEE),
-    onErrorContainer = Color(0xFFB00020)
-)
-
+/**
+ * Main theme for the Lost & Found app
+ * 
+ * To switch color palettes, change the colorScheme parameter:
+ * - UTAColorScheme: UTA branded blue and orange
+ * - CleanNeutralColorScheme: Minimalist grayscale with soft accent
+ * - VibrantModernColorScheme: Bright teal, purple, and lime
+ * 
+ * All palettes are defined in ColorPalettes.kt
+ */
 @Composable
 fun LostAndFoundTheme(
+    // Change this to switch between color palettes
+    colorScheme: androidx.compose.material3.ColorScheme = UTAColorScheme,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

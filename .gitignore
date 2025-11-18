@@ -19,6 +19,7 @@ build/
 # Gradle files
 .gradle/
 gradle-wrapper.jar
+gradle-wrapper.properties
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -41,6 +42,8 @@ local.properties
 .idea/misc.xml
 .idea/vcs.xml
 .idea/deploymentTargetDropDown.xml
+.idea/navEditor.xml
+.idea/inspectionProfiles/
 
 # Android Studio
 captures/
@@ -48,6 +51,10 @@ captures/
 .cxx/
 *.jks
 *.keystore
+.DS_Store
+*.hprof
+*.ap_
+output.json
 
 # NDK
 obj/
@@ -60,57 +67,192 @@ obj/
 .Trashes
 ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Firebase
+# Firebase - CRITICAL: Never commit these files!
 google-services.json
 .firebaserc
 firebase-debug.log
 firebase-debug.*.log
 .firebase/
+firebase.json
+firestore.rules
+firestore.indexes.json
 
-# Signing files
+# Signing files - CRITICAL: Keep these secret!
 *.jks
 *.keystore
 key.properties
 keystore.properties
+signing.properties
+release.keystore
+debug.keystore
+
+# API Keys and Secrets - CRITICAL: Never commit!
+secrets.properties
+apikey.properties
+api_keys.xml
+local.defaults.properties
 
 # Lint
 lint-report.html
 lint-report_files/
 lint-results.xml
+lint-baseline.xml
 
 # Version control
 *.orig
 *.rej
 *.swp
 *~
+.svn/
 
 # Logs
 *.log
+logs/
 
 # Android Profiler
 *.hprof
 
 # Kotlin
 *.kotlin_module
-
-# Navigation files
-navigation.xml
-
-# API Keys (security)
-secrets.properties
-apikey.properties
+.kotlin/
 
 # Backup files
 *~
 *.bak
 *.backup
+*.tmp
 
 # Cache directories
 .cache/
 tmp/
 temp/
+*.cache
 
 # Build outputs
 release/
 debug/
+*.dex
+
+# Node.js (for Firebase CLI)
+node_modules/
+package-lock.json
+package.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm/
+.yarn/
+
+# Testing
+.test/
+test-results/
+*.test
+
+# Documentation (optional - remove if you want to commit)
+# COLOR_PALETTES_REFERENCE.md
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Visual Studio cache/options
+.vs/
+
+# macOS
+.AppleDouble
+.LSOverride
+Icon
+.DocumentRevisions-V100
+.fseventsd
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# JetBrains
+.idea/**/usage.statistics.xml
+.idea/**/contentModel.xml
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+
+# Flutter/Dart (if you ever add Flutter)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# Fastlane (if used for deployment)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+
+# CocoaPods (if used)
+Pods/
+
+# Sensitive documentation (uncomment if needed)
+# DEPLOYMENT_NOTES.md
+# PRODUCTION_SECRETS.md
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Compiled output
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Virtual machine crash logs
+hs_err_pid*
+replay_pid*

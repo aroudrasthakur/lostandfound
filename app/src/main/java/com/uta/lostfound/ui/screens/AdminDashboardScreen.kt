@@ -39,6 +39,11 @@ fun AdminDashboardScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.refreshMetrics() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Statistics")
+                    }
                 }
             )
         }

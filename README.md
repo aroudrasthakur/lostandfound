@@ -28,6 +28,7 @@ A comprehensive Lost & Found Android application built with Kotlin, Jetpack Comp
 - [Features](#-features)
 - [Screenshots](#-screenshots)
 - [Technology Stack](#-technology-stack)
+- [Color Palettes](#-color-palettes)
 - [Project Architecture](#-project-architecture)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
@@ -48,6 +49,23 @@ A comprehensive Lost & Found Android application built with Kotlin, Jetpack Comp
 ## ✨ Features
 
 ### Core Functionality
+
+- **Report Lost Items**: Users can report items they've lost with detailed descriptions, photos, and location
+- **Add Found Items**: Users can report items they've found to help return them to owners
+- **Smart Matching System**: AI-powered matching between lost and found items
+  - Request-based matching requiring approval from both parties
+  - Dual approval workflow (item owner + claimant)
+  - Automatic notifications when match requests are received
+  - Match status tracking (PENDING → APPROVED → MATCHED)
+  - Matched items automatically removed from active listings
+- **Real-time Notifications**: Push notifications for match requests and approvals
+- **Advanced Search**: Search by title, description, category, or location
+- **Image Upload**: Support for multiple images via camera or gallery
+- **Location Autocomplete**: Google Places API integration for accurate locations
+- **User Profiles**: View user posting history and contact information
+- **Admin Dashboard**: Comprehensive analytics and content moderation tools
+
+### Enhanced Functionality
 
 - ✅ **User Authentication** - Email/password authentication with Firebase
 - ✅ **Report Lost Items** - Report items with photos, descriptions, categories, and locations
@@ -162,6 +180,152 @@ io.coil-kt:coil-compose:2.5.0
 // Coroutines
 kotlinx-coroutines-android:1.7.3
 ```
+
+---
+
+## 🎨 Color Palettes
+
+The app includes three complete Material 3 color palettes that can be easily switched in `Theme.kt`. All palettes are WCAG 2.1 AA accessible with proper contrast ratios.
+
+### How to Switch Palettes
+
+In `app/src/main/java/com/uta/lostfound/ui/theme/Theme.kt`, change the default `colorScheme` parameter:
+
+```kotlin
+@Composable
+fun LostAndFoundTheme(
+    colorScheme: ColorScheme = UTAColorScheme,  // Change this line!
+    content: @Composable () -> Unit
+) { ... }
+```
+
+Available options:
+
+- `UTAColorScheme` - UTA branded blue and orange (default)
+- `CleanNeutralColorScheme` - Minimalist grayscale with soft accent
+- `VibrantModernColorScheme` - Bright teal, purple, and lime
+
+### 1. UTA Themed Palette (Default)
+
+**Best for:** Official/institutional feel, brand recognition
+
+- **Primary:** `#0064B0` (UTA Blue) - Navigation, buttons, main actions
+- **Secondary:** `#FF8200` (UTA Orange) - FABs, accents, important CTAs
+- **Tertiary:** `#006A6A` (Teal) - Alternative actions
+- **Background:** `#FDFCFF` (Off-White) - Light and neutral
+
+**Use Cases:**
+
+- Primary: Search button, "Lost" tab, main navigation
+- Secondary: "+" add button, notifications badge
+- Tertiary: "Found" tab, secondary features
+- Category pills use primaryContainer (`#D3E4F7`)
+
+### 2. Clean Neutral Palette
+
+**Best for:** Professional/minimal design, modern aesthetic
+
+- **Primary:** `#7B94B2` (Blue-Gray) - Subtle, sophisticated
+- **Secondary:** `#726B69` (Warm Gray) - Soft, neutral accent
+- **Tertiary:** `#7C9580` (Soft Sage) - Natural, calming
+- **Background:** `#FFFFFF` (Pure White) - Maximum cleanliness
+
+**Use Cases:**
+
+- Best for corporate, minimal, focus on content over color
+- Primary used sparingly for important actions
+- Lots of white space with subtle gray backgrounds
+
+### 3. Vibrant Modern Palette
+
+**Best for:** Student-facing app, engaging experience, energetic feel
+
+- **Primary:** `#00B4A6` (Vibrant Teal) - Fresh, modern
+- **Secondary:** `#8B5CF6` (Purple) - Creative, youthful
+- **Tertiary:** `#84CC16` (Lime) - Energetic, positive
+- **Background:** `#FAFAFA` (Soft White) - Slightly warmer than pure white
+
+**Use Cases:**
+
+- Primary (teal): Main navigation, "Found" items, success states
+- Secondary (purple): "Lost" items, creative features
+- Tertiary (lime): Success indicators, positive feedback, matches
+- High contrast keeps UI exciting but readable
+
+### Color Psychology
+
+| Palette            | Primary                      | Secondary             | Best For                  |
+| ------------------ | ---------------------------- | --------------------- | ------------------------- |
+| **UTA Themed**     | Trust, reliability, academic | Energy, enthusiasm    | Institutional recognition |
+| **Clean Neutral**  | Sophistication, modern       | Professional, serious | Focus on content          |
+| **Vibrant Modern** | Innovation, creativity       | Imagination, youth    | Student engagement        |
+
+### Implementation Examples
+
+**Dynamic palette switching by user role:**
+
+```kotlin
+@Composable
+fun LostAndFoundTheme(
+    userRole: String = "student",
+    content: @Composable () -> Unit
+) {
+    val colorScheme = when (userRole) {
+        "admin" -> UTAColorScheme          // Official for staff
+        "staff" -> CleanNeutralColorScheme // Professional for faculty
+        else -> VibrantModernColorScheme   // Engaging for students
+    }
+
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = Typography,
+        content = content
+    )
+}
+```
+
+**Using individual colors:**
+
+```kotlin
+// Access helper objects from ColorPalettes.kt
+Text(text = "UTA Blue", color = UTAColors.Blue)
+
+Button(
+    colors = ButtonDefaults.buttonColors(
+        containerColor = VibrantColors.Teal
+    )
+) {
+    Text("Vibrant Action")
+}
+```
+
+### Quick Reference Table
+
+| Role           | UTA               | Clean Neutral     | Vibrant            |
+| -------------- | ----------------- | ----------------- | ------------------ |
+| **Primary**    | Blue #0064B0      | Blue-Gray #7B94B2 | Teal #00B4A6       |
+| **Secondary**  | Orange #FF8200    | Warm Gray #726B69 | Purple #8B5CF6     |
+| **Tertiary**   | Teal #006A6A      | Sage #7C9580      | Lime #84CC16       |
+| **Background** | Off-White #FDFCFF | White #FFFFFF     | Soft White #FAFAFA |
+
+### Accessibility
+
+All palettes maintain WCAG 2.1 AA contrast ratios:
+
+- Text on primary: **4.5:1 minimum**
+- Large text: **3:1 minimum**
+- UI components: **3:1 minimum**
+
+Test contrast at: [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
+
+### Recommendations
+
+- ✅ **Start with UTA Themed** - Most recognizable, good brand consistency
+- 🏢 **Use Clean Neutral** for professional/admin interfaces
+- 🎉 **Switch to Vibrant** for student engagement campaigns or events
+- 📊 Consider A/B testing different palettes with users
+- 🏷️ Category pills work best with `primaryContainer` colors
+- 🔴 Keep error colors consistent across all palettes
 
 ---
 
@@ -348,11 +512,20 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow read: if request.auth != null;
     }
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null &&
+        resource.data.recipientUserId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null &&
+        resource.data.recipientUserId == request.auth.uid;
+    }
   }
 }
 ```
 
 Click **"Publish"** to save the rules.
+
+**Note:** After adding notifications, you may need to create a composite index in Firestore. If you see an error about missing index when loading notifications, Firebase will provide a direct link in the error message to create the required index automatically.
 
 #### Step 6: Configure Storage Security Rules
 
@@ -806,8 +979,10 @@ lostandfound/
   imageUrl: string,
   userId: string,
   userName: string,
-  status: string,        // "lost"
+  status: string,        // "LOST"
   isActive: boolean,
+  isMatched: boolean,    // true when item is matched
+  matchId: string,       // Reference to match document
   createdAt: timestamp,
   updatedAt: timestamp
 }
@@ -826,8 +1001,10 @@ lostandfound/
   imageUrl: string,
   userId: string,
   userName: string,
-  status: string,        // "found"
+  status: string,        // "FOUND"
   isActive: boolean,
+  isMatched: boolean,    // true when item is matched
+  matchId: string,       // Reference to match document
   createdAt: timestamp,
   updatedAt: timestamp
 }
@@ -838,11 +1015,33 @@ lostandfound/
 ```javascript
 {
   id: string,
-  lostItemId: string,
-  foundItemId: string,
-  similarityScore: number,
-  matchedAt: timestamp,
-  notifiedUsers: array<string>
+  itemId: string,              // The item being matched
+  itemOwnerId: string,         // User who posted the item
+  claimantUserId: string,      // User claiming the item
+  requesterId: string,         // User who initiated the match
+  status: string,              // "PENDING", "APPROVED", "REJECTED"
+  itemOwnerApproved: boolean,  // Item owner's approval status
+  claimantApproved: boolean,   // Claimant's approval status
+  timestamp: timestamp,        // When request was created
+  approvedAt: timestamp,       // When both parties approved (optional)
+  notificationSent: boolean    // Notification delivery status
+}
+```
+
+#### `notifications`
+
+```javascript
+{
+  id: string,
+  recipientUserId: string,
+  senderUserId: string,
+  senderName: string,
+  type: string,              // "have_item", "claim_item", "match_request"
+  itemTitle: string,
+  itemId: string,            // For match requests navigation
+  matchId: string,           // For match requests
+  timestamp: timestamp,
+  read: boolean
 }
 ```
 
@@ -859,6 +1058,37 @@ enum class ItemCategory {
     DOCUMENTS,      // IDs, passports, papers
     OTHER           // Anything else
 }
+```
+
+### Firestore Indexes
+
+The app requires composite indexes for efficient querying. These are defined in `firestore.indexes.json`:
+
+#### Required Indexes:
+
+- `lost_items`: `(isActive, isMatched, createdAt DESC)`
+- `found_items`: `(isActive, isMatched, createdAt DESC)`
+- `lost_items`: `(userId, isActive)`
+- `found_items`: `(userId, isActive)`
+- `lost_items`: `(category, isActive)`
+- `found_items`: `(category, isActive)`
+- `notifications`: `(recipientUserId, timestamp DESC)`
+- `matches`: `(itemId, status)`
+
+#### Deploy Indexes:
+
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login to Firebase
+firebase login
+
+# Link to your project
+firebase use --add
+
+# Deploy indexes
+firebase deploy --only firestore:indexes
 ```
 
 ---
@@ -894,6 +1124,15 @@ enum class ItemCategory {
 - Sync Gradle files
 
 ### Firebase Issues
+
+#### "Firestore Index Required" Error
+
+**Solution:**
+
+- Click the link in the error message to auto-create the index in Firebase Console
+- Or deploy all indexes: `firebase deploy --only firestore:indexes`
+- Wait 2-5 minutes for indexes to build
+- Check status at: Firebase Console → Firestore → Indexes
 
 #### "Permission Denied" when reading Firestore
 

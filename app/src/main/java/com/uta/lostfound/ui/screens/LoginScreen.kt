@@ -36,6 +36,17 @@ fun LoginScreen(
         }
     }
     
+    // Show loading screen while checking authentication status
+    if (uiState.isLoading && !uiState.isLoggedIn && email.isBlank()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+    
     Scaffold(
         topBar = {
             TopAppBar(

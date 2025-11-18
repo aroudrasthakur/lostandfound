@@ -5,12 +5,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -19,11 +23,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.uta.lostfound.data.model.Item
+import com.uta.lostfound.data.model.ItemCategory
 import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.utils.FirebaseDataSeeder
 import com.uta.lostfound.viewmodel.FoundItemsViewModel
@@ -50,19 +59,90 @@ fun HomeScreen(
     
     var selectedTab by remember { mutableStateOf(0) }
     var showAddMenu by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    
+    // Load items when HomeScreen is first composed
+    LaunchedEffect(Unit) {
+        foundItemsViewModel.loadFoundItems()
+    }
+    
+    // Filter categories for quick access
+    val categories = listOf("All", "Electronics", "Documents", "Bags", "Keys", "Other")
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("UTA Lost & Found") },
-                actions = {
-                    IconButton(onClick = onNavigateToSearch) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
-                    }
-                    Box {
-                        IconButton(onClick = { showAddMenu = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Item")
+            Column {
+                // Top App Bar with increased visual hierarchy
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "UTA Lost & Found",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    actions = {
+                        if (loginUiState.currentUser?.role == "admin") {
+                            IconButton(onClick = onNavigateToAdminDashboard) {
+                                Icon(Icons.Default.Settings, contentDescription = "Admin Dashboard")
+                            }
                         }
+                    }
+                )
+                
+                // Search Bar with Plus Icon
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = MaterialTheme.shapes.large,
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        tonalElevation = 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(onClick = onNavigateToSearch)
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Search items...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    // Plus button with dropdown for adding items
+                    Box {
+                        IconButton(
+                            onClick = { showAddMenu = !showAddMenu },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add Item",
+                                tint = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        
                         DropdownMenu(
                             expanded = showAddMenu,
                             onDismissRequest = { showAddMenu = false }
@@ -84,38 +164,115 @@ fun HomeScreen(
                                     onNavigateToReportFound()
                                 },
                                 leadingIcon = {
-                                    Icon(Icons.Default.Add, contentDescription = null)
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null)
                                 }
                             )
                         }
                     }
-                    if (loginUiState.currentUser?.role == "admin") {
-                        IconButton(onClick = onNavigateToAdminDashboard) {
-                            Icon(Icons.Default.Settings, contentDescription = "Admin Dashboard")
-                        }
+                }
+                
+                // Category Filter Chips
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(categories) { category ->
+                        FilterChip(
+                            selected = if (category == "All") selectedCategory == null else selectedCategory == category,
+                            onClick = {
+                                selectedCategory = if (category == "All") null else category
+                            },
+                            label = { Text(category) }
+                        )
                     }
                 }
-            )
+                
+                // Thin divider to separate header from content
+                Divider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+            }
         },
         bottomBar = {
-            NavigationBar {
+            // Clean bottom navigation with clear selected state
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp
+            ) {
                 NavigationBarItem(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Default.Search, contentDescription = "Lost Items") },
-                    label = { Text("Lost") }
+                    icon = { 
+                        Icon(
+                            Icons.Default.Search, 
+                            contentDescription = "Lost Items",
+                            modifier = Modifier.size(24.dp)
+                        ) 
+                    },
+                    label = { 
+                        Text(
+                            "Lost",
+                            style = MaterialTheme.typography.labelMedium
+                        ) 
+                    },
+                    alwaysShowLabel = true
                 )
                 NavigationBarItem(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Found Items") },
-                    label = { Text("Found") }
+                    icon = { 
+                        Icon(
+                            Icons.Default.CheckCircle, 
+                            contentDescription = "Found Items",
+                            modifier = Modifier.size(24.dp)
+                        ) 
+                    },
+                    label = { 
+                        Text(
+                            "Found",
+                            style = MaterialTheme.typography.labelMedium
+                        ) 
+                    },
+                    alwaysShowLabel = true
                 )
                 NavigationBarItem(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") }
+                    icon = { 
+                        Icon(
+                            Icons.Default.Notifications, 
+                            contentDescription = "Notifications",
+                            modifier = Modifier.size(24.dp)
+                        ) 
+                    },
+                    label = { 
+                        Text(
+                            "Notifications",
+                            style = MaterialTheme.typography.labelMedium
+                        ) 
+                    },
+                    alwaysShowLabel = true
+                )
+                NavigationBarItem(
+                    selected = selectedTab == 3,
+                    onClick = { selectedTab = 3 },
+                    icon = { 
+                        Icon(
+                            Icons.Default.Person, 
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(24.dp)
+                        ) 
+                    },
+                    label = { 
+                        Text(
+                            "Profile",
+                            style = MaterialTheme.typography.labelMedium
+                        ) 
+                    },
+                    alwaysShowLabel = true
                 )
             }
         }
@@ -125,9 +282,20 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Filter items based on selected category
+            val filteredItems = remember(foundItemsState.items, selectedCategory) {
+                if (selectedCategory == null) {
+                    foundItemsState.items
+                } else {
+                    foundItemsState.items.filter { 
+                        it.category.equals(selectedCategory, ignoreCase = true) 
+                    }
+                }
+            }
+            
             when (selectedTab) {
                 0 -> ItemsList(
-                    items = foundItemsState.items.filter { it.status.name == "LOST" },
+                    items = filteredItems.filter { it.status.name == "LOST" },
                     isLoading = foundItemsState.isLoading,
                     error = foundItemsState.error,
                     emptyMessage = "No lost items reported yet",
@@ -136,7 +304,7 @@ fun HomeScreen(
                     onRefresh = { foundItemsViewModel.loadFoundItems() }
                 )
                 1 -> ItemsList(
-                    items = foundItemsState.items.filter { it.status.name == "FOUND" },
+                    items = filteredItems.filter { it.status.name == "FOUND" },
                     isLoading = foundItemsState.isLoading,
                     error = foundItemsState.error,
                     emptyMessage = "No found items reported yet",
@@ -144,11 +312,33 @@ fun HomeScreen(
                     onUserClick = onNavigateToUserProfile,
                     onRefresh = { foundItemsViewModel.loadFoundItems() }
                 )
-                2 -> ProfileTab(
+                2 -> {
+                    // Notifications Tab
+                    loginUiState.currentUser?.let { user ->
+                        NotificationsTab(
+                            userId = user.uid,
+                            onNavigateToUserProfile = onNavigateToUserProfile,
+                            onNavigateToItemDetails = onNavigateToItemDetails
+                        )
+                    } ?: run {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Please log in to view notifications")
+                        }
+                    }
+                }
+                3 -> ProfileTab(
                     user = loginUiState.currentUser,
                     onLogout = {
                         loginViewModel.signOut()
                         onNavigateToLogin()
+                    },
+                    onViewFullProfile = {
+                        loginUiState.currentUser?.uid?.let { userId ->
+                            onNavigateToUserProfile(userId)
+                        }
                     }
                 )
             }
@@ -156,6 +346,7 @@ fun HomeScreen(
     }
 }
 
+// ItemsList with simple refresh button in corner (Material Design 3)
 @Composable
 fun ItemsList(
     items: List<Item>,
@@ -174,13 +365,22 @@ fun ItemsList(
                 )
             }
             error != null -> {
-                Text(
-                    text = "Error: $error",
-                    color = MaterialTheme.colorScheme.error,
+                Column(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .padding(16.dp)
-                )
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Error: $error",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = onRefresh) {
+                        Text("Retry")
+                    }
+                }
             }
             items.isEmpty() -> {
                 Text(
@@ -193,9 +393,10 @@ fun ItemsList(
                 )
             }
             else -> {
+                // Increased spacing between cards for cleaner look
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(items) { item ->
                         ItemCard(
@@ -208,21 +409,27 @@ fun ItemsList(
             }
         }
         
-        // Refresh FAB
-        FloatingActionButton(
-            onClick = onRefresh,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(
-                Icons.Default.Refresh,
-                contentDescription = "Refresh"
-            )
+        // Small refresh button in bottom right corner (not overlapping content)
+        if (!isLoading && items.isNotEmpty()) {
+            SmallFloatingActionButton(
+                onClick = onRefresh,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }
 
+// Enhanced ItemCard with improved typography and layout
 @Composable
 fun ItemCard(
     item: Item,
@@ -233,20 +440,23 @@ fun ItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        // Subtle elevation with medium corner radius
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp)
+                .padding(16.dp)
         ) {
-            // Image with placeholder for empty URLs
+            // Reduced image size, left aligned
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(64.dp)
+                    .clip(MaterialTheme.shapes.small)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        shape = MaterialTheme.shapes.medium
+                        shape = MaterialTheme.shapes.small
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -261,63 +471,92 @@ fun ItemCard(
                     Icon(
                         Icons.Default.Info,
                         contentDescription = "No image",
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(32.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(16.dp))
             
             Column(
                 modifier = Modifier.weight(1f)
             ) {
+                // Bold item title
                 Text(
                     text = item.title,
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1
                 )
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 
-                Text(
-                    text = item.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = "Location: ${item.location}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                // User name (clickable)
-                Text(
-                    text = "Posted by: ${item.userName}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    modifier = Modifier.clickable(
-                        onClick = onUserClick,
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
+                // Category as pill badge with light gray background
+                Surface(
+                    shape = MaterialTheme.shapes.small,
+                    color = Color(0xFFE0E0E0),
+                    modifier = Modifier.wrapContentWidth()
+                ) {
+                    Text(
+                        text = "[${item.category.uppercase()}]",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF424242),
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
-                )
+                }
                 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 
+                // Location with pin icon
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Location",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = item.location,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(6.dp))
+                
+                // Compact "Posted by" and date on one line
                 val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-                Text(
-                    text = dateFormat.format(Date(item.date)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Posted by ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = item.userName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.clickable(
+                            onClick = onUserClick,
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        )
+                    )
+                    Text(
+                        text = " • ${dateFormat.format(Date(item.date))}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -326,7 +565,8 @@ fun ItemCard(
 @Composable
 fun ProfileTab(
     user: com.uta.lostfound.data.model.User?,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onViewFullProfile: () -> Unit = {}
 ) {
     val scope = rememberCoroutineScope()
     var isSeeding by remember { mutableStateOf(false) }
@@ -377,6 +617,22 @@ fun ProfileTab(
                         )
                     }
                 )
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // View Full Profile Button
+            OutlinedButton(
+                onClick = onViewFullProfile,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("View Full Profile")
             }
         }
         

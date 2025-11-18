@@ -1,6 +1,9 @@
 package com.uta.lostfound.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -8,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.uta.lostfound.ui.screens.*
+import com.uta.lostfound.viewmodel.LoginViewModel
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -29,8 +33,11 @@ sealed class Screen(val route: String) {
 @Composable
 fun NavGraph(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Login.route
+    startDestination: String = Screen.Login.route,
+    loginViewModel: LoginViewModel = viewModel()
 ) {
+    val loginUiState by loginViewModel.uiState.collectAsState()
+    
     NavHost(
         navController = navController,
         startDestination = startDestination
@@ -124,6 +131,9 @@ fun NavGraph(
                 },
                 onNavigateToItemDetails = { itemId ->
                     navController.navigate(Screen.ItemDetails.createRoute(itemId))
+                },
+                onNavigateToUserProfile = { userId ->
+                    navController.navigate(Screen.UserProfile.createRoute(userId))
                 }
             )
         }
@@ -152,11 +162,14 @@ fun NavGraph(
                 navArgument("userId") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+            val userId = backStackEntry.arguments?.getString("userId") ?: ""
             UserProfileScreen(
                 userId = userId,
                 onNavigateBack = {
                     navController.popBackStack()
+                },
+                onNavigateToItemDetails = { itemId ->
+                    navController.navigate(Screen.ItemDetails.createRoute(itemId))
                 }
             )
         }

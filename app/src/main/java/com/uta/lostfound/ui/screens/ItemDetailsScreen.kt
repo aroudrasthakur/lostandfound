@@ -43,10 +43,13 @@ fun ItemDetailsScreen(
     
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showNotificationSuccessDialog by remember { mutableStateOf(false) }
+    var showMatchRequestDialog by remember { mutableStateOf(false) }
+    var showMatchSuccessDialog by remember { mutableStateOf(false) }
     
     // Load item details
-    LaunchedEffect(itemId) {
-        viewModel.loadItem(itemId)
+    LaunchedEffect(itemId, loginUiState.currentUser?.uid) {
+        val userId = loginUiState.currentUser?.uid ?: ""
+        viewModel.loadItem(itemId, userId)
     }
     
     // Navigate back on successful delete
@@ -60,6 +63,20 @@ fun ItemDetailsScreen(
     LaunchedEffect(uiState.notificationSent) {
         if (uiState.notificationSent) {
             showNotificationSuccessDialog = true
+        }
+    }
+    
+    // Show dialog when match request is sent
+    LaunchedEffect(uiState.matchRequestSent) {
+        if (uiState.matchRequestSent) {
+            showMatchRequestDialog = true
+        }
+    }
+    
+    // Show dialog when match is approved
+    LaunchedEffect(uiState.matchApproved) {
+        if (uiState.matchApproved) {
+            showMatchSuccessDialog = true
         }
     }
     
@@ -168,16 +185,37 @@ fun ItemDetailsScreen(
                             modifier = Modifier.padding(16.dp)
                         ) {
                             // Status Badge
-                            AssistChip(
-                                onClick = {},
-                                label = { 
-                                    Text(
-                                        text = item.status.name,
-                                        style = MaterialTheme.typography.labelMedium
+                            Row(
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = { 
+                                        Text(
+                                            text = item.status.name,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    }
+                                )
+                                
+                                // Show matched badge if item is matched
+                                if (item.isMatched) {
+                                    AssistChip(
+                                        onClick = {},
+                                        label = { 
+                                            Text(
+                                                text = "✓ MATCHED",
+                                                style = MaterialTheme.typography.labelMedium
+                                            )
+                                        },
+                                        colors = AssistChipDefaults.assistChipColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
                                     )
-                                },
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
+                                }
+                            }
                             
                             // Title
                             Text(
@@ -252,62 +290,183 @@ fun ItemDetailsScreen(
                                     )
                             )
                             
-                            // Contact Owner Button (if not owner)
-                            if (!isOwner) {
-                                Button(
-                                    onClick = {
-                                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                            data = Uri.parse("mailto:")
-                                            putExtra(Intent.EXTRA_SUBJECT, "Regarding: ${item.title}")
-                                            putExtra(Intent.EXTRA_TEXT, 
-                                                "Hi,\n\nI saw your ${item.status.name.lowercase()} item posting for \"${item.title}\".\n\n")
-                                        }
-                                        context.startActivity(Intent.createChooser(intent, "Send Email"))
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(
-                                        Icons.Default.Email,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Contact Owner")
-                                }
-                                
-                                Spacer(modifier = Modifier.height(12.dp))
-                                
-                                // "I Have the Item" button for LOST items or "Claim Item" for FOUND items
-                                if (currentUser != null) {
-                                    Button(
-                                        onClick = {
-                                            val notificationType = if (item.status.name == "LOST") "have_item" else "claim_item"
-                                            viewModel.sendItemNotification(
-                                                recipientUserId = item.userId,
-                                                senderName = currentUser.name,
-                                                itemTitle = item.title,
-                                                notificationType = notificationType
-                                            )
-                                        },
+                            // Show different UI based on item state
+                            when {
+                                // If item is already matched, show matched status
+                                item.isMatched -> {
+                                    Card(
                                         modifier = Modifier.fillMaxWidth(),
-                                        enabled = !uiState.isLoading,
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.secondary
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
                                         )
                                     ) {
-                                        if (uiState.isLoading) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(20.dp),
-                                                color = MaterialTheme.colorScheme.onSecondary
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Text(
+                                                text = "✓",
+                                                style = MaterialTheme.typography.headlineMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
-                                        } else {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "This item has been matched!",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+                                
+                                // If there's a pending match for the current user to approve
+                                uiState.pendingMatch != null && currentUser != null -> {
+                                    val pendingMatch = uiState.pendingMatch!!
+                                    val needsApproval = (pendingMatch.itemOwnerId == currentUser.uid && !pendingMatch.itemOwnerApproved) ||
+                                                       (pendingMatch.claimantUserId == currentUser.uid && !pendingMatch.claimantApproved)
+                                    
+                                    if (needsApproval) {
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.secondaryContainer
+                                            )
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(16.dp)
+                                            ) {
+                                                Text(
+                                                    text = "Match Request Pending",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(bottom = 8.dp)
+                                                )
+                                                Text(
+                                                    text = "Someone is interested in this item. Review and approve if this is a valid match.",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(bottom = 16.dp)
+                                                )
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            viewModel.rejectMatch(pendingMatch.id)
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        enabled = !uiState.isLoading
+                                                    ) {
+                                                        Text("Reject")
+                                                    }
+                                                    Button(
+                                                        onClick = {
+                                                            viewModel.approveMatch(
+                                                                matchId = pendingMatch.id,
+                                                                userId = currentUser.uid
+                                                            )
+                                                        },
+                                                        modifier = Modifier.weight(1f),
+                                                        enabled = !uiState.isLoading
+                                                    ) {
+                                                        if (uiState.isLoading) {
+                                                            CircularProgressIndicator(
+                                                                modifier = Modifier.size(20.dp),
+                                                                color = MaterialTheme.colorScheme.onPrimary
+                                                            )
+                                                        } else {
+                                                            Text("Approve Match")
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        // Match request sent, waiting for other party
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                                            )
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "Match request sent. Waiting for approval...",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                
+                                // Show match request button if not owner and not matched
+                                !isOwner && currentUser != null -> {
+                                    Column {
+                                        Button(
+                                            onClick = {
+                                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                                    data = Uri.parse("mailto:")
+                                                    putExtra(Intent.EXTRA_SUBJECT, "Regarding: ${item.title}")
+                                                    putExtra(Intent.EXTRA_TEXT, 
+                                                        "Hi,\n\nI saw your ${item.status.name.lowercase()} item posting for \"${item.title}\".\n\n")
+                                                }
+                                                context.startActivity(Intent.createChooser(intent, "Send Email"))
+                                            },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
                                             Icon(
-                                                Icons.Default.Info,
+                                                Icons.Default.Email,
                                                 contentDescription = null,
                                                 modifier = Modifier.size(20.dp)
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text(if (item.status.name == "LOST") "I Have the Item" else "Claim Item")
+                                            Text("Contact Owner")
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        
+                                        // Match request button
+                                        Button(
+                                            onClick = {
+                                                viewModel.createMatchRequest(
+                                                    itemId = item.id,
+                                                    itemOwnerId = item.userId,
+                                                    claimantUserId = currentUser.uid,
+                                                    requesterId = currentUser.uid,
+                                                    requesterName = currentUser.name,
+                                                    itemTitle = item.title
+                                                )
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            enabled = !uiState.isLoading,
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.secondary
+                                            )
+                                        ) {
+                                            if (uiState.isLoading) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp),
+                                                    color = MaterialTheme.colorScheme.onSecondary
+                                                )
+                                            } else {
+                                                Icon(
+                                                    Icons.Default.Info,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(if (item.status.name == "LOST") "I Have This Item" else "This Is My Item")
+                                            }
                                         }
                                     }
                                 }
@@ -376,11 +535,79 @@ fun ItemDetailsScreen(
         )
     }
     
+    // Match Request Sent Dialog
+    if (showMatchRequestDialog && item != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showMatchRequestDialog = false
+                viewModel.resetMatchState()
+            },
+            title = { Text("Match Request Sent") },
+            text = { 
+                Text(
+                    "Your match request has been sent to the item owner. You'll be notified when they respond."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showMatchRequestDialog = false
+                        viewModel.resetMatchState()
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+    
+    // Match Success Dialog
+    if (showMatchSuccessDialog && item != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showMatchSuccessDialog = false
+                viewModel.resetMatchState()
+            },
+            title = { Text("Match Confirmed!") },
+            text = { 
+                Text(
+                    "Congratulations! This item has been successfully matched. Both parties can now coordinate the exchange."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showMatchSuccessDialog = false
+                        viewModel.resetMatchState()
+                        onNavigateBack()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+    
     // Notification Error Snackbar
     uiState.notificationError?.let { error ->
         LaunchedEffect(error) {
             // You could show a Snackbar here if needed
             viewModel.resetNotificationState()
         }
+    }
+    
+    // Match Error Dialog
+    uiState.matchError?.let { error ->
+        AlertDialog(
+            onDismissRequest = { viewModel.resetMatchState() },
+            title = { Text("Error") },
+            text = { Text(error) },
+            confirmButton = {
+                Button(onClick = { viewModel.resetMatchState() }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 }

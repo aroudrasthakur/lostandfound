@@ -2,8 +2,10 @@ package com.uta.lostfound.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.User
 import com.uta.lostfound.data.repository.AuthRepository
+import com.uta.lostfound.data.repository.ItemRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -11,6 +13,8 @@ import kotlinx.coroutines.launch
 data class UserProfileUiState(
     val isLoading: Boolean = false,
     val user: User? = null,
+    val userItems: List<Item> = emptyList(),
+    val isLoadingItems: Boolean = false,
     val error: String? = null,
     val restrictSuccess: Boolean = false,
     val unrestrictSuccess: Boolean = false,
@@ -19,6 +23,7 @@ data class UserProfileUiState(
 
 class UserProfileViewModel : ViewModel() {
     private val authRepository = AuthRepository()
+    private val itemRepository = ItemRepository()
     
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState
@@ -39,6 +44,31 @@ class UserProfileViewModel : ViewModel() {
                 _uiState.value.copy(
                     isLoading = false,
                     error = result.exceptionOrNull()?.message ?: "Failed to load user"
+                )
+            }
+            
+            // Load user items after loading user profile
+            if (result.isSuccess) {
+                loadUserItems(userId)
+            }
+        }
+    }
+    
+    private fun loadUserItems(userId: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoadingItems = true)
+            
+            val result = itemRepository.getUserItems(userId)
+            
+            _uiState.value = if (result.isSuccess) {
+                _uiState.value.copy(
+                    isLoadingItems = false,
+                    userItems = result.getOrNull() ?: emptyList()
+                )
+            } else {
+                _uiState.value.copy(
+                    isLoadingItems = false,
+                    userItems = emptyList()
                 )
             }
         }

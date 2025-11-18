@@ -7,6 +7,8 @@ import com.uta.lostfound.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.delay
 
 data class LoginUiState(
     val isLoading: Boolean = false,
@@ -22,16 +24,54 @@ class LoginViewModel : ViewModel() {
     val uiState: StateFlow<LoginUiState> = _uiState
 
     init {
-        checkAuthStatus()
+        // Check if user is authenticated without blocking
+        val firebaseUser = authRepository.currentUser
+        if (firebaseUser != null) {
+            // User is authenticated, fetch full user data in background
+            checkAuthStatus()
+        } else {
+            // No user logged in, set state immediately
+            _uiState.value = _uiState.value.copy(isLoading = false)
+        }
     }
 
     private fun checkAuthStatus() {
         viewModelScope.launch {
-            val user = authRepository.getCurrentUser()
-            _uiState.value = _uiState.value.copy(
-                isLoggedIn = user != null,
-                currentUser = user
-            )
+            var retries = 0
+            val maxRetries = 3
+            
+            while (retries < maxRetries) {
+                try {
+                    _uiState.value = _uiState.value.copy(isLoading = true)
+                    
+                    // Add 10 second timeout for first attempt, 5 seconds for retries
+                    val timeoutMs = if (retries == 0) 10000L else 5000L
+                    val user = withTimeout(timeoutMs) {
+                        authRepository.getCurrentUser()
+                    }
+                    
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isLoggedIn = user != null,
+                        currentUser = user
+                    )
+                    return@launch // Success, exit
+                    
+                } catch (e: Exception) {
+                    retries++
+                    if (retries >= maxRetries) {
+                        // All retries failed - clear auth state and show login screen
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isLoggedIn = false,
+                            error = null // Don't show error on initial load
+                        )
+                    } else {
+                        // Wait before retry
+                        delay(1000L)
+                    }
+                }
+            }
         }
     }
 

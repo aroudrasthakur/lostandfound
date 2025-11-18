@@ -7,12 +7,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -27,6 +29,7 @@ import java.util.*
 fun SearchScreen(
     onNavigateBack: () -> Unit,
     onNavigateToItemDetails: (String) -> Unit,
+    onNavigateToUserProfile: (String) -> Unit = {},
     viewModel: SearchViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,15 +42,17 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search Items") },
+                title = { Text("Search") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { showFilters = !showFilters }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Filters")
+                    if (uiState.searchMode == "Items") {
+                        IconButton(onClick = { showFilters = !showFilters }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Filters")
+                        }
                     }
                 }
             )
@@ -58,6 +63,27 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Search Mode Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = uiState.searchMode == "Items",
+                    onClick = { viewModel.setSearchMode("Items") },
+                    label = { Text("Items") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = uiState.searchMode == "Users",
+                    onClick = { viewModel.setSearchMode("Users") },
+                    label = { Text("Users") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -66,7 +92,14 @@ fun SearchScreen(
                     viewModel.updateQuery(it)
                 },
                 label = { Text("Search") },
-                placeholder = { Text("Search by title, description, or location...") },
+                placeholder = { 
+                    Text(
+                        if (uiState.searchMode == "Users") 
+                            "Search by name or email..." 
+                        else 
+                            "Search by title, description, or location..."
+                    )
+                },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
                 },
@@ -76,8 +109,8 @@ fun SearchScreen(
                     .padding(16.dp)
             )
             
-            // Filters Section
-            if (showFilters) {
+            // Filters Section (only for Items)
+            if (showFilters && uiState.searchMode == "Items") {
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -183,13 +216,36 @@ fun SearchScreen(
                     }
                     searchQuery.isEmpty() -> {
                         Text(
-                            text = "Enter a search query",
+                            text = if (uiState.searchMode == "Users") "Search for users by name or email" else "Enter a search query",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .padding(16.dp)
                         )
+                    }
+                    uiState.searchMode == "Users" && uiState.userResults.isEmpty() -> {
+                        Text(
+                            text = "No users found",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(16.dp)
+                        )
+                    }
+                    uiState.searchMode == "Users" -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(uiState.userResults) { user ->
+                                UserResultCard(
+                                    user = user,
+                                    onClick = { onNavigateToUserProfile(user.uid) }
+                                )
+                            }
+                        }
                     }
                     uiState.searchResults.isEmpty() -> {
                         Text(
@@ -215,6 +271,66 @@ fun SearchScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun UserResultCard(
+    user: com.uta.lostfound.data.model.User,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "User",
+                modifier = Modifier.size(48.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = user.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = user.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            if (user.role == "admin") {
+                AssistChip(
+                    onClick = {},
+                    label = { 
+                        Text(
+                            text = "Admin",
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                )
             }
         }
     }

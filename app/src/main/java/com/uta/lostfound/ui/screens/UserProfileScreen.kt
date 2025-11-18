@@ -1,6 +1,9 @@
 package com.uta.lostfound.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -9,8 +12,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.viewmodel.LoginViewModel
 import com.uta.lostfound.viewmodel.UserProfileViewModel
 import java.text.SimpleDateFormat
@@ -21,9 +28,62 @@ import java.util.*
 fun UserProfileScreen(
     userId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToItemDetails: (String) -> Unit = {},
     loginViewModel: LoginViewModel = viewModel(),
     viewModel: UserProfileViewModel = viewModel()
 ) {
+    // Handle empty or invalid userId
+    if (userId.isBlank()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("User Profile") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Invalid User Profile",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "This user profile cannot be loaded.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onNavigateBack) {
+                        Text("Go Back")
+                    }
+                }
+            }
+        }
+        return
+    }
+    
     val loginUiState by loginViewModel.uiState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     
@@ -79,14 +139,27 @@ fun UserProfileScreen(
                             .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Error: ${uiState.error}",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
+                            text = "User Not Found",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(onClick = { viewModel.loadUser(userId) }) {
-                            Text("Retry")
+                        Text(
+                            text = "This user profile is not available.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(onClick = onNavigateBack) {
+                            Text("Go Back")
                         }
                     }
                 }
@@ -225,6 +298,90 @@ fun UserProfileScreen(
                                         text = user.uid.take(8) + "...",
                                         style = MaterialTheme.typography.bodySmall
                                     )
+                                }
+                            }
+                        }
+                        
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        // User's Posted Items
+                        Card(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Posted Items",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                
+                                if (uiState.isLoadingItems) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(150.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                } else if (uiState.userItems.isEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(100.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "No items posted yet",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                } else {
+                                    // Lost Items Section
+                                    val lostItems = uiState.userItems.filter { it.status == ItemStatus.LOST }
+                                    if (lostItems.isNotEmpty()) {
+                                        Text(
+                                            text = "Lost Items (${lostItems.size})",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                            modifier = Modifier.padding(bottom = 16.dp)
+                                        ) {
+                                            items(lostItems) { item ->
+                                                UserItemCard(
+                                                    item = item,
+                                                    onClick = { onNavigateToItemDetails(item.id) }
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Found Items Section
+                                    val foundItems = uiState.userItems.filter { it.status == ItemStatus.FOUND }
+                                    if (foundItems.isNotEmpty()) {
+                                        Text(
+                                            text = "Found Items (${foundItems.size})",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.secondary,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                        LazyRow(
+                                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                        ) {
+                                            items(foundItems) { item ->
+                                                UserItemCard(
+                                                    item = item,
+                                                    onClick = { onNavigateToItemDetails(item.id) }
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -393,5 +550,83 @@ fun UserProfileScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun UserItemCard(
+    item: com.uta.lostfound.data.model.Item,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .clickable(onClick = onClick),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column {
+            // Item Image
+            if (item.imageUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp)
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (item.status == ItemStatus.LOST) Icons.Default.Search else Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                    )
+                }
+            }
+            
+            // Item Details
+            Column(
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = item.category,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                AssistChip(
+                    onClick = {},
+                    label = { 
+                        Text(
+                            text = if (item.status == ItemStatus.LOST) "Lost" else "Found",
+                            style = MaterialTheme.typography.labelSmall
+                        ) 
+                    },
+                    modifier = Modifier.height(24.dp),
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (item.status == ItemStatus.LOST) 
+                            MaterialTheme.colorScheme.primaryContainer 
+                        else 
+                            MaterialTheme.colorScheme.secondaryContainer
+                    )
+                )
+            }
+        }
     }
 }
