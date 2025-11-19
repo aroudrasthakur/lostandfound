@@ -72,6 +72,9 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("androidx.navigation:navigation-compose:2.7.6")
+    
+    // Splash Screen
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
