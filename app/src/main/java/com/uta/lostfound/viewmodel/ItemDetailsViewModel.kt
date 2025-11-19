@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.data.model.Match
+import com.uta.lostfound.data.model.MatchStatus
 import com.uta.lostfound.data.repository.ItemRepository
 import com.uta.lostfound.data.repository.MatchRepository
 import com.uta.lostfound.data.repository.NotificationRepository
@@ -35,6 +36,7 @@ class ItemDetailsViewModel : ViewModel() {
     
     fun loadItem(itemId: String, userId: String) {
         viewModelScope.launch {
+            android.util.Log.d("ItemDetailsViewModel", "loadItem called - itemId: $itemId, userId: $userId")
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
             // Try both collections
@@ -43,16 +45,25 @@ class ItemDetailsViewModel : ViewModel() {
                 result = itemRepository.getFoundItem(itemId)
             }
             
+            // Preserve matchApproved state when reloading
+            val currentMatchApproved = _uiState.value.matchApproved
+            android.util.Log.d("ItemDetailsViewModel", "Preserving matchApproved state: $currentMatchApproved")
+            
             _uiState.value = if (result.isSuccess) {
+                val item = result.getOrNull()
+                android.util.Log.d("ItemDetailsViewModel", "Item loaded - isMatched: ${item?.isMatched}, matchId: ${item?.matchId}")
                 _uiState.value.copy(
                     isLoading = false,
-                    item = result.getOrNull(),
-                    error = null
+                    item = item,
+                    error = null,
+                    matchApproved = currentMatchApproved
                 )
             } else {
+                android.util.Log.e("ItemDetailsViewModel", "Failed to load item: ${result.exceptionOrNull()?.message}")
                 _uiState.value.copy(
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message ?: "Failed to load item"
+                    error = result.exceptionOrNull()?.message ?: "Failed to load item",
+                    matchApproved = currentMatchApproved
                 )
             }
             
@@ -65,9 +76,22 @@ class ItemDetailsViewModel : ViewModel() {
     
     private fun loadPendingMatch(itemId: String, userId: String) {
         viewModelScope.launch {
+            android.util.Log.d("ItemDetailsViewModel", "loadPendingMatch called for itemId: $itemId")
             val result = matchRepository.getPendingMatchForUser(itemId, userId)
             if (result.isSuccess) {
-                _uiState.value = _uiState.value.copy(pendingMatch = result.getOrNull())
+                val match = result.getOrNull()
+                android.util.Log.d("ItemDetailsViewModel", "Pending match result - match: $match, status: ${match?.status}")
+                
+                // Preserve matchApproved state
+                val currentMatchApproved = _uiState.value.matchApproved
+                
+                _uiState.value = _uiState.value.copy(
+                    pendingMatch = match,
+                    matchRequestSent = match?.requesterId == userId && match.status == MatchStatus.PENDING,
+                    matchApproved = currentMatchApproved
+                )
+                
+                android.util.Log.d("ItemDetailsViewModel", "State after loadPendingMatch - matchApproved: ${_uiState.value.matchApproved}, pendingMatch: ${_uiState.value.pendingMatch}")
             }
         }
     }
@@ -166,38 +190,54 @@ class ItemDetailsViewModel : ViewModel() {
         }
     }
     
-    fun approveMatch(matchId: String, userId: String) {
+    fun approveMatch(matchId: String, userId: String, approverName: String) {
         viewModelScope.launch {
+            android.util.Log.d("ItemDetailsViewModel", "approveMatch called - matchId: $matchId, userId: $userId")
             _uiState.value = _uiState.value.copy(isLoading = true, matchError = null)
             
-            val result = matchRepository.approveMatch(matchId, userId)
+            val result = matchRepository.approveMatch(matchId, userId, approverName)
             
-            _uiState.value = if (result.isSuccess) {
-                _uiState.value.copy(
+            android.util.Log.d("ItemDetailsViewModel", "approveMatch result - success: ${result.isSuccess}")
+            
+            if (result.isSuccess) {
+                // Reload the item to get updated status
+                val itemId = _uiState.value.item?.id ?: ""
+                android.util.Log.d("ItemDetailsViewModel", "Reloading item: $itemId")
+                
+                if (itemId.isNotEmpty()) {
+                    loadItem(itemId, userId)
+                }
+                
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     matchApproved = true,
                     pendingMatch = null,
                     matchError = null
                 )
+                
+                android.util.Log.d("ItemDetailsViewModel", "State updated - matchApproved: ${_uiState.value.matchApproved}")
             } else {
-                _uiState.value.copy(
+                val error = result.exceptionOrNull()?.message ?: "Failed to approve match"
+                android.util.Log.e("ItemDetailsViewModel", "Error approving match: $error")
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    matchError = result.exceptionOrNull()?.message ?: "Failed to approve match"
+                    matchError = error
                 )
             }
         }
     }
     
-    fun rejectMatch(matchId: String) {
+    fun rejectMatch(matchId: String, rejecterUserId: String, rejecterName: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, matchError = null)
             
-            val result = matchRepository.rejectMatch(matchId)
+            val result = matchRepository.rejectMatch(matchId, rejecterUserId, rejecterName)
             
             _uiState.value = if (result.isSuccess) {
                 _uiState.value.copy(
                     isLoading = false,
                     pendingMatch = null,
+                    matchRequestSent = false,
                     matchError = null
                 )
             } else {

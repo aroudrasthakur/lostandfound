@@ -8,8 +8,8 @@ data class Metrics(
     val id: String = "", // Format: yyyy-mm
     val lostCount: Int = 0,
     val foundCount: Int = 0,
-    val unclaimedCount: Int = 0,
     val matchedCount: Int = 0,
+    val totalItemsCount: Int = 0,
     val totalUsers: Int = 0,
     val lastUpdated: Long = System.currentTimeMillis()
 ) : Parcelable {
@@ -18,8 +18,8 @@ data class Metrics(
             "id" to id,
             "lostCount" to lostCount,
             "foundCount" to foundCount,
-            "unclaimedCount" to unclaimedCount,
             "matchedCount" to matchedCount,
+            "totalItemsCount" to totalItemsCount,
             "totalUsers" to totalUsers,
             "lastUpdated" to lastUpdated
         )

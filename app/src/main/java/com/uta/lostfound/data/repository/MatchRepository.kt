@@ -111,8 +111,10 @@ class MatchRepository {
                         approvedAt = doc.getLong("approvedAt")?.takeIf { it > 0 },
                         notificationSent = doc.getBoolean("notificationSent") ?: false
                     )
-                    // Only return if this user is involved and hasn't approved yet
-                    if ((match.itemOwnerId == userId && !match.itemOwnerApproved) ||
+                    // Return if user is the requester (sender waiting for approval)
+                    // OR if user is the approver who hasn't approved yet (receiver who needs to approve)
+                    if (match.requesterId == userId ||
+                        (match.itemOwnerId == userId && !match.itemOwnerApproved) ||
                         (match.claimantUserId == userId && !match.claimantApproved)) {
                         match
                     } else null
@@ -127,7 +129,104 @@ class MatchRepository {
         }
     }
 
-    suspend fun approveMatch(matchId: String, userId: String): Result<Unit> {
+    suspend fun approveMatch(matchId: String, userId: String, approverName: String): Result<Unit> {
+        return try {
+            android.util.Log.d("MatchRepository", "Approving match: $matchId by user: $userId")
+            val matchDoc = matchesCollection.document(matchId).get().await()
+            
+            val match = Match(
+                id = matchDoc.getString("id") ?: "",
+                itemId = matchDoc.getString("itemId") ?: "",
+                itemOwnerId = matchDoc.getString("itemOwnerId") ?: "",
+                claimantUserId = matchDoc.getString("claimantUserId") ?: "",
+                requesterId = matchDoc.getString("requesterId") ?: "",
+                status = MatchStatus.valueOf(matchDoc.getString("status") ?: "PENDING"),
+                itemOwnerApproved = matchDoc.getBoolean("itemOwnerApproved") ?: false,
+                claimantApproved = matchDoc.getBoolean("claimantApproved") ?: false,
+                timestamp = matchDoc.getLong("timestamp") ?: 0L,
+                approvedAt = matchDoc.getLong("approvedAt")?.takeIf { it > 0 },
+                notificationSent = matchDoc.getBoolean("notificationSent") ?: false
+            )
+            
+            android.util.Log.d("MatchRepository", "Match details - itemId: ${match.itemId}, requesterId: ${match.requesterId}")
+            
+            // Try to get item from both collections to determine which one it's in
+            var itemDoc = firestore.collection("lost_items").document(match.itemId).get().await()
+            var itemCollection = "lost_items"
+            
+            if (!itemDoc.exists()) {
+                itemDoc = firestore.collection("found_items").document(match.itemId).get().await()
+                itemCollection = "found_items"
+            }
+            
+            val itemTitle = itemDoc.getString("title") ?: "Unknown Item"
+            
+            android.util.Log.d("MatchRepository", "Item found in collection: $itemCollection, title: $itemTitle")
+            
+            // Update approval status
+            val updates = mutableMapOf<String, Any>()
+            when (userId) {
+                match.itemOwnerId -> updates["itemOwnerApproved"] = true
+                match.claimantUserId -> updates["claimantApproved"] = true
+            }
+            
+            // Approve immediately when item owner approves (single approval system)
+            updates["status"] = MatchStatus.APPROVED.name
+            updates["approvedAt"] = System.currentTimeMillis()
+            updates["notificationSent"] = true
+            
+            android.util.Log.d("MatchRepository", "Moving item from $itemCollection to matched_items")
+            
+            // Get the full item data
+            val itemData = itemDoc.data ?: emptyMap()
+            val matchedItemData = itemData.toMutableMap().apply {
+                put("isMatched", true)
+                put("matchId", matchId)
+                put("isActive", false)
+                put("updatedAt", System.currentTimeMillis())
+                put("matchedAt", System.currentTimeMillis())
+            }
+            
+            // Move item to matched_items collection
+            firestore.collection("matched_items")
+                .document(match.itemId)
+                .set(matchedItemData)
+                .await()
+            
+            android.util.Log.d("MatchRepository", "Item added to matched_items collection")
+            
+            // Delete item from original collection (lost_items or found_items)
+            firestore.collection(itemCollection)
+                .document(match.itemId)
+                .delete()
+                .await()
+            
+            android.util.Log.d("MatchRepository", "Item removed from $itemCollection collection")
+            
+            android.util.Log.d("MatchRepository", "Sending notification to requester: ${match.requesterId}")
+            
+            // Send approval notification to the requester
+            notificationRepository.sendMatchApprovedNotification(
+                recipientUserId = match.requesterId,
+                approverUserId = userId,
+                approverName = approverName,
+                itemId = match.itemId,
+                itemTitle = itemTitle,
+                matchId = matchId
+            )
+            
+            android.util.Log.d("MatchRepository", "Updating match document")
+            matchesCollection.document(matchId).update(updates).await()
+            
+            android.util.Log.d("MatchRepository", "Match approval completed successfully")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("MatchRepository", "Error approving match", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun rejectMatch(matchId: String, rejecterUserId: String, rejecterName: String): Result<Unit> {
         return try {
             val matchDoc = matchesCollection.document(matchId).get().await()
             
@@ -145,47 +244,25 @@ class MatchRepository {
                 notificationSent = matchDoc.getBoolean("notificationSent") ?: false
             )
             
-            // Update approval status
-            val updates = mutableMapOf<String, Any>()
-            when (userId) {
-                match.itemOwnerId -> updates["itemOwnerApproved"] = true
-                match.claimantUserId -> updates["claimantApproved"] = true
-            }
+            // Get item details for notification
+            val itemDoc = itemsCollection.document(match.itemId).get().await()
+            val itemTitle = itemDoc.getString("title") ?: "Unknown Item"
             
-            // Check if both approved
-            val bothApproved = (if (userId == match.itemOwnerId) true else match.itemOwnerApproved) &&
-                               (if (userId == match.claimantUserId) true else match.claimantApproved)
-            
-            if (bothApproved) {
-                updates["status"] = MatchStatus.APPROVED.name
-                updates["approvedAt"] = System.currentTimeMillis()
-                
-                // Update item status to matched
-                itemsCollection.document(match.itemId).update(
-                    mapOf(
-                        "isMatched" to true,
-                        "matchId" to matchId,
-                        "isActive" to false,
-                        "updatedAt" to System.currentTimeMillis()
-                    )
-                ).await()
-            }
-            
-            matchesCollection.document(matchId).update(updates).await()
-            
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun rejectMatch(matchId: String): Result<Unit> {
-        return try {
             matchesCollection.document(matchId).update(
                 mapOf(
                     "status" to MatchStatus.REJECTED.name
                 )
             ).await()
+            
+            // Send rejection notification to the requester
+            notificationRepository.sendMatchRejectedNotification(
+                recipientUserId = match.requesterId,
+                rejecterUserId = rejecterUserId,
+                rejecterName = rejecterName,
+                itemId = match.itemId,
+                itemTitle = itemTitle,
+                matchId = matchId
+            )
             
             Result.success(Unit)
         } catch (e: Exception) {

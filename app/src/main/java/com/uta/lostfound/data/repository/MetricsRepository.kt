@@ -35,30 +35,26 @@ class MetricsRepository {
         return try {
             val monthId = getCurrentMonthId()
             
-            // Count all lost items (active and inactive)
-            val allLostItems = firestore.collection("lost_items")
+            // Count lost items from lost_items collection
+            val lostCount = firestore.collection("lost_items")
                 .get()
                 .await()
-                .documents.mapNotNull { it.toObject(com.uta.lostfound.data.model.Item::class.java) }
+                .size()
             
-            // Count all found items (active and inactive)
-            val allFoundItems = firestore.collection("found_items")
+            // Count found items from found_items collection
+            val foundCount = firestore.collection("found_items")
                 .get()
                 .await()
-                .documents.mapNotNull { it.toObject(com.uta.lostfound.data.model.Item::class.java) }
+                .size()
             
-            // Count matched items (items with isMatched = true)
-            val matchedLostCount = allLostItems.count { it.isMatched }
-            val matchedFoundCount = allFoundItems.count { it.isMatched }
-            val matchedCount = matchedLostCount + matchedFoundCount
+            // Count matched items from matched_items collection
+            val matchedCount = firestore.collection("matched_items")
+                .get()
+                .await()
+                .size()
             
-            // Count active, non-matched items
-            val activeLostCount = allLostItems.count { it.isActive && !it.isMatched }
-            val activeFoundCount = allFoundItems.count { it.isActive && !it.isMatched }
-            
-            // Total active items (lost + found)
-            val lostCount = activeLostCount
-            val foundCount = activeFoundCount
+            // Total items count (lost + found + matched)
+            val totalItemsCount = lostCount + foundCount + matchedCount
             
             // Count total users
             val totalUsers = firestore.collection("users")
@@ -66,15 +62,12 @@ class MetricsRepository {
                 .await()
                 .size()
             
-            // Unclaimed items are the active, non-matched items
-            val unclaimedCount = lostCount + foundCount
-            
             val metrics = Metrics(
                 id = monthId,
                 lostCount = lostCount,
                 foundCount = foundCount,
-                unclaimedCount = unclaimedCount,
                 matchedCount = matchedCount,
+                totalItemsCount = totalItemsCount,
                 totalUsers = totalUsers,
                 lastUpdated = System.currentTimeMillis()
             )
@@ -115,8 +108,8 @@ class MetricsRepository {
             id = monthId,
             lostCount = 0,
             foundCount = 0,
-            unclaimedCount = 0,
             matchedCount = 0,
+            totalItemsCount = 0,
             totalUsers = 0
         )
     }

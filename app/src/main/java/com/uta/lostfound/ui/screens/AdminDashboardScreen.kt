@@ -115,11 +115,11 @@ fun AdminDashboardScreen(
                             color = MaterialTheme.colorScheme.tertiary
                         )
                         
-                        // Unclaimed Items Card
+                        // Total Items Card
                         MetricCard(
-                            title = "Unclaimed Items",
-                            value = metrics.unclaimedCount.toString(),
-                            icon = Icons.Default.Info,
+                            title = "Total Items",
+                            value = metrics.totalItemsCount.toString(),
+                            icon = Icons.Default.List,
                             color = MaterialTheme.colorScheme.secondary
                         )
                         

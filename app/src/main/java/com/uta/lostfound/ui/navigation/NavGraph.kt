@@ -17,6 +17,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
     object Home : Screen("home")
+    object ReportTypeSelection : Screen("report_type_selection")
     object ReportLostItem : Screen("report_lost_item")
     object ReportFoundItem : Screen("report_found_item")
     object Search : Screen("search")
@@ -70,11 +71,8 @@ fun NavGraph(
         
         composable(Screen.Home.route) {
             HomeScreen(
-                onNavigateToReportLost = {
-                    navController.navigate(Screen.ReportLostItem.route)
-                },
-                onNavigateToReportFound = {
-                    navController.navigate(Screen.ReportFoundItem.route)
+                onNavigateToReportItem = {
+                    navController.navigate(Screen.ReportTypeSelection.route)
                 },
                 onNavigateToSearch = {
                     navController.navigate(Screen.Search.route)
@@ -92,6 +90,20 @@ fun NavGraph(
                 },
                 onNavigateToUserProfile = { userId ->
                     navController.navigate(Screen.UserProfile.createRoute(userId))
+                }
+            )
+        }
+        
+        composable(Screen.ReportTypeSelection.route) {
+            ReportTypeSelectionScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToReportLost = {
+                    navController.navigate(Screen.ReportLostItem.route)
+                },
+                onNavigateToReportFound = {
+                    navController.navigate(Screen.ReportFoundItem.route)
                 }
             )
         }

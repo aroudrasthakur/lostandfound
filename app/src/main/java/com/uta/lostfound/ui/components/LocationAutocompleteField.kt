@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Close
@@ -11,6 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import android.util.Log
 import com.uta.lostfound.data.service.LocationAutocompleteService
@@ -32,6 +36,7 @@ fun LocationAutocompleteField(
     errorMessage: String? = null
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val locationService = remember { LocationAutocompleteService(context) }
     val scope = rememberCoroutineScope()
     
@@ -90,6 +95,12 @@ fun LocationAutocompleteField(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             isError = isError,
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            ),
             leadingIcon = {
                 Icon(
                     Icons.Default.LocationOn,

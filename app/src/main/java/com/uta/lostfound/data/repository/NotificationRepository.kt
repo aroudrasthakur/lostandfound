@@ -111,6 +111,68 @@ class NotificationRepository {
         }
     }
     
+    suspend fun sendMatchApprovedNotification(
+        recipientUserId: String,
+        approverUserId: String,
+        approverName: String,
+        itemId: String,
+        itemTitle: String,
+        matchId: String
+    ): Result<Unit> {
+        return try {
+            val notification = hashMapOf(
+                "recipientUserId" to recipientUserId,
+                "senderUserId" to approverUserId,
+                "senderName" to approverName,
+                "itemTitle" to itemTitle,
+                "itemId" to itemId,
+                "matchId" to matchId,
+                "type" to "match_approved",
+                "timestamp" to System.currentTimeMillis(),
+                "read" to false
+            )
+            
+            firestore.collection("notifications")
+                .add(notification)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun sendMatchRejectedNotification(
+        recipientUserId: String,
+        rejecterUserId: String,
+        rejecterName: String,
+        itemId: String,
+        itemTitle: String,
+        matchId: String
+    ): Result<Unit> {
+        return try {
+            val notification = hashMapOf(
+                "recipientUserId" to recipientUserId,
+                "senderUserId" to rejecterUserId,
+                "senderName" to rejecterName,
+                "itemTitle" to itemTitle,
+                "itemId" to itemId,
+                "matchId" to matchId,
+                "type" to "match_rejected",
+                "timestamp" to System.currentTimeMillis(),
+                "read" to false
+            )
+            
+            firestore.collection("notifications")
+                .add(notification)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getUserNotifications(userId: String): Result<List<Notification>> {
         return try {
             val snapshot = firestore.collection("notifications")

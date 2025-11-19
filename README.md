@@ -52,12 +52,13 @@ A comprehensive Lost & Found Android application built with Kotlin, Jetpack Comp
 
 - **Report Lost Items**: Users can report items they've lost with detailed descriptions, photos, and location
 - **Add Found Items**: Users can report items they've found to help return them to owners
-- **Smart Matching System**: AI-powered matching between lost and found items
-  - Request-based matching requiring approval from both parties
-  - Dual approval workflow (item owner + claimant)
-  - Automatic notifications when match requests are received
-  - Match status tracking (PENDING → APPROVED → MATCHED)
-  - Matched items automatically removed from active listings
+- **Smart Matching System**: Request-based matching between lost and found items
+  - Single approval workflow - receiver approves/rejects match requests
+  - Senders cannot send duplicate requests (shows "Awaiting Approval")
+  - Automatic notifications for match requests, approvals, and rejections
+  - Match status tracking (PENDING → APPROVED/REJECTED)
+  - Matched items moved to dedicated matched_items collection
+  - Swipe-to-delete notifications with confirmation
 - **Real-time Notifications**: Push notifications for match requests and approvals
 - **Advanced Search**: Search by title, description, category, or location
 - **Image Upload**: Support for multiple images via camera or gallery
@@ -84,8 +85,12 @@ A comprehensive Lost & Found Android application built with Kotlin, Jetpack Comp
 - 🖼️ **Image Placeholders** - Graceful handling for items without uploaded images
 - 🎨 **Content-Specific Images** - Real Unsplash images matching item descriptions
 - 🗂️ **Complete Data Models** - Full toMap() implementations for all Firebase entities
-- 📱 **Enhanced UI** - Info icon placeholders for missing images
-- 🛠️ **Bug Fixes** - Enum serialization fixed, both lost and found items now load correctly
+- 📱 **Enhanced UI** - Info icon placeholders for missing images, Material 3 redesigned Login/Signup screens
+- 🔔 **Swipe-to-Delete Notifications** - Swipe gestures with confirm/cancel for notification deletion
+- ✨ **Single Approval Match System** - Streamlined matching requiring only receiver approval
+- 📦 **Matched Items Collection** - Dedicated Firestore collection for matched items
+- 📊 **Admin Dashboard Improvements** - Direct collection counts, Total Items metric, optimized queries
+- 🛠️ **Bug Fixes** - Fixed collection reference bugs, enum serialization, proper item lifecycle management
 
 ### Technical Features
 
@@ -124,6 +129,27 @@ A comprehensive Lost & Found Android application built with Kotlin, Jetpack Comp
 - Added manual refresh button (FAB) on Lost/Found tabs
 - Fixed items visibility bug (now loads both lost and found items)
 - Enhanced image display with conditional rendering
+- Redesigned Login and Signup screens with Material 3 styling
+- Swipe-to-delete notifications with visual confirm/cancel indicators
+
+**Match System Enhancements**
+
+- Implemented single approval workflow (receiver only)
+- Fixed collection reference bug (items → lost_items/found_items)
+- Created matched_items Firestore collection
+- Items are moved (not copied) to matched_items on approval
+- Sender sees "Awaiting Approval" and cannot send duplicate requests
+- Comprehensive logging for debugging match flow
+- Notifications sent for both approval and rejection
+
+**Admin Dashboard Updates**
+
+- Lost Items count from lost_items collection size
+- Found Items count from found_items collection size
+- Matched Items count from matched_items collection size
+- Total Items metric (sum of lost + found + matched)
+- Removed complex filtering logic for improved performance
+- Direct Firestore collection counting
 
 **Documentation**
 

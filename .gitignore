@@ -69,15 +69,13 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# Firebase - CRITICAL: Never commit these files!
+# Firebase - CRITICAL: Never commit google-services.json!
+# NOTE: firebase.json, firestore.rules, firestore.indexes.json are version-controlled
 google-services.json
 .firebaserc
 firebase-debug.log
 firebase-debug.*.log
 .firebase/
-firebase.json
-firestore.rules
-firestore.indexes.json
 
 # Signing files - CRITICAL: Keep these secret!
 *.jks

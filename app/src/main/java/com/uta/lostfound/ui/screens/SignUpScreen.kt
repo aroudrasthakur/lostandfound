@@ -2,19 +2,31 @@ package com.uta.lostfound.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uta.lostfound.viewmodel.LoginViewModel
@@ -35,9 +47,11 @@ fun SignUpScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     
-    val passwordsMatch = password == confirmPassword
-    val isFormValid = name.isNotBlank() && email.isNotBlank() && 
-                      password.isNotBlank() && passwordsMatch && password.length >= 6
+    val isNameValid = name.isNotBlank()
+    val isEmailValid = email.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    val isPasswordValid = password.isNotBlank() && password.length >= 6
+    val passwordsMatch = password == confirmPassword && confirmPassword.isNotEmpty()
+    val isFormValid = isNameValid && isEmailValid && isPasswordValid && passwordsMatch
     
     // Navigate to home when signup succeeds
     LaunchedEffect(uiState.isLoggedIn) {
@@ -48,13 +62,33 @@ fun SignUpScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Create Account") },
+            SmallTopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Email,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "UTA Lost & Found",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.smallTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { padding ->
@@ -62,81 +96,232 @@ fun SignUpScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "Join UTA Lost & Found",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Signup Form Card
+            SignUpFormCard(
+                name = name,
+                email = email,
+                password = password,
+                confirmPassword = confirmPassword,
+                passwordVisible = passwordVisible,
+                confirmPasswordVisible = confirmPasswordVisible,
+                onNameChange = { name = it },
+                onEmailChange = { email = it },
+                onPasswordChange = { password = it },
+                onConfirmPasswordChange = { confirmPassword = it },
+                onPasswordVisibilityToggle = { passwordVisible = !passwordVisible },
+                onConfirmPasswordVisibilityToggle = { confirmPasswordVisible = !confirmPasswordVisible },
+                onSignUpClick = { viewModel.signUp(name, email, password) },
+                isLoading = uiState.isLoading,
+                error = uiState.error,
+                isFormValid = isFormValid,
+                isNameValid = isNameValid,
+                isEmailValid = isEmailValid,
+                isPasswordValid = isPasswordValid,
+                passwordsMatch = passwordsMatch
             )
             
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Bottom Auth Prompt
+            BottomAuthPromptSignUp(
+                normalText = "Already have an account? ",
+                clickableText = "Sign In",
+                onClick = onNavigateBack
+            )
+            
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
+private fun SignUpFormCard(
+    name: String,
+    email: String,
+    password: String,
+    confirmPassword: String,
+    passwordVisible: Boolean,
+    confirmPasswordVisible: Boolean,
+    onNameChange: (String) -> Unit,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onConfirmPasswordChange: (String) -> Unit,
+    onPasswordVisibilityToggle: () -> Unit,
+    onConfirmPasswordVisibilityToggle: () -> Unit,
+    onSignUpClick: () -> Unit,
+    isLoading: Boolean,
+    error: String?,
+    isFormValid: Boolean,
+    isNameValid: Boolean,
+    isEmailValid: Boolean,
+    isPasswordValid: Boolean,
+    passwordsMatch: Boolean
+) {
+    val focusManager = LocalFocusManager.current
+    
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight(),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Header
             Text(
-                text = "Create an account to get started",
+                text = "Create Account",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Join the UTA Lost and Found community",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 32.dp)
+                textAlign = TextAlign.Center
             )
             
+            Spacer(modifier = Modifier.height(32.dp))
+            
+            // Name Field
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it },
+                onValueChange = onNameChange,
                 label = { Text("Full Name") },
+                placeholder = { Text("John Doe") },
+                leadingIcon = {
+                    Icon(Icons.Default.Person, contentDescription = null)
+                },
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                isError = name.isNotEmpty() && !isNameValid,
+                supportingText = {
+                    if (name.isNotEmpty() && !isNameValid) {
+                        Text("Name is required")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
             )
             
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Email Field
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = onEmailChange,
                 label = { Text("Email") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                placeholder = { Text("your.email@example.com") },
+                leadingIcon = {
+                    Icon(Icons.Default.Email, contentDescription = null)
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
                 singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                isError = email.isNotEmpty() && !isEmailValid,
+                supportingText = {
+                    if (email.isNotEmpty() && !isEmailValid) {
+                        Text("Please enter a valid email address")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
             )
             
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Password Field
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it },
+                onValueChange = onPasswordChange,
                 label = { Text("Password") },
+                placeholder = { Text("Minimum 6 characters") },
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null)
+                },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                ),
                 trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(onClick = onPasswordVisibilityToggle) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Close else Icons.Default.Check,
-                            contentDescription = if (passwordVisible) "Hide password" else "Show password"
+                            imageVector = if (passwordVisible) Icons.Default.Lock else Icons.Default.Lock,
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            tint = if (passwordVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 singleLine = true,
+                isError = password.isNotEmpty() && !isPasswordValid,
                 supportingText = {
-                    if (password.isNotEmpty() && password.length < 6) {
-                        Text("Password must be at least 6 characters", color = MaterialTheme.colorScheme.error)
+                    if (password.isNotEmpty() && !isPasswordValid) {
+                        Text("Password must be at least 6 characters")
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth()
             )
             
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Confirm Password Field
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it },
+                onValueChange = onConfirmPasswordChange,
                 label = { Text("Confirm Password") },
+                placeholder = { Text("Re-enter your password") },
+                leadingIcon = {
+                    Icon(Icons.Default.Lock, contentDescription = null)
+                },
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focusManager.clearFocus()
+                        if (isFormValid && !isLoading) {
+                            onSignUpClick()
+                        }
+                    }
+                ),
                 trailingIcon = {
-                    IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
+                    IconButton(onClick = onConfirmPasswordVisibilityToggle) {
                         Icon(
-                            imageVector = if (confirmPasswordVisible) Icons.Default.Close else Icons.Default.Check,
-                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
+                            imageVector = if (confirmPasswordVisible) Icons.Default.Lock else Icons.Default.Lock,
+                            contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
+                            tint = if (confirmPasswordVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -144,50 +329,93 @@ fun SignUpScreen(
                 isError = confirmPassword.isNotEmpty() && !passwordsMatch,
                 supportingText = {
                     if (confirmPassword.isNotEmpty() && !passwordsMatch) {
-                        Text("Passwords do not match", color = MaterialTheme.colorScheme.error)
+                        Text("Passwords do not match")
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                modifier = Modifier.fillMaxWidth()
             )
             
-            if (uiState.error != null) {
+            // Error Message
+            if (error != null) {
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = uiState.error ?: "",
+                    text = error,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
             
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Sign Up Button
             Button(
-                onClick = {
-                    viewModel.signUp(name, email, password)
-                },
-                enabled = !uiState.isLoading && isFormValid,
+                onClick = onSignUpClick,
+                enabled = !isLoading && isFormValid,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.medium
             ) {
-                if (uiState.isLoading) {
+                if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Sign Up")
+                    Text(
+                        "Sign Up",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            TextButton(
-                onClick = onNavigateBack,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Already have an account? Sign In")
             }
         }
     }
+}
+
+@Composable
+private fun BottomAuthPromptSignUp(
+    normalText: String,
+    clickableText: String,
+    onClick: () -> Unit
+) {
+    val annotatedString = buildAnnotatedString {
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        ) {
+            append(normalText)
+        }
+        
+        pushStringAnnotation(tag = "CLICKABLE", annotation = "CLICKABLE")
+        withStyle(
+            style = SpanStyle(
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
+        ) {
+            append(clickableText)
+        }
+        pop()
+    }
+    
+    ClickableText(
+        text = annotatedString,
+        style = MaterialTheme.typography.bodyMedium.copy(
+            textAlign = TextAlign.Center
+        ),
+        onClick = { offset ->
+            annotatedString.getStringAnnotations(
+                tag = "CLICKABLE",
+                start = offset,
+                end = offset
+            ).firstOrNull()?.let {
+                onClick()
+            }
+        }
+    )
 }

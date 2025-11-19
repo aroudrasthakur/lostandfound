@@ -322,6 +322,37 @@ fun ItemDetailsScreen(
                                     }
                                 }
                                 
+                                // If match was approved, show status
+                                uiState.matchApproved || (item.isMatched && item.matchId.isNotBlank()) -> {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                                        )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Info,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp),
+                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Match Approved",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                }
+                                
                                 // If there's a pending match for the current user to approve
                                 uiState.pendingMatch != null && currentUser != null -> {
                                     val pendingMatch = uiState.pendingMatch!!
@@ -356,7 +387,11 @@ fun ItemDetailsScreen(
                                                 ) {
                                                     OutlinedButton(
                                                         onClick = {
-                                                            viewModel.rejectMatch(pendingMatch.id)
+                                                            viewModel.rejectMatch(
+                                                                matchId = pendingMatch.id,
+                                                                rejecterUserId = currentUser.uid,
+                                                                rejecterName = currentUser.name
+                                                            )
                                                         },
                                                         modifier = Modifier.weight(1f),
                                                         enabled = !uiState.isLoading
@@ -367,7 +402,8 @@ fun ItemDetailsScreen(
                                                         onClick = {
                                                             viewModel.approveMatch(
                                                                 matchId = pendingMatch.id,
-                                                                userId = currentUser.uid
+                                                                userId = currentUser.uid,
+                                                                approverName = currentUser.name
                                                             )
                                                         },
                                                         modifier = Modifier.weight(1f),
@@ -435,37 +471,69 @@ fun ItemDetailsScreen(
                                         
                                         Spacer(modifier = Modifier.height(12.dp))
                                         
-                                        // Match request button
-                                        Button(
-                                            onClick = {
-                                                viewModel.createMatchRequest(
-                                                    itemId = item.id,
-                                                    itemOwnerId = item.userId,
-                                                    claimantUserId = currentUser.uid,
-                                                    requesterId = currentUser.uid,
-                                                    requesterName = currentUser.name,
-                                                    itemTitle = item.title
+                                        // Match request button or status
+                                        if (uiState.matchRequestSent) {
+                                            // Show "Awaiting Approval" status
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
                                                 )
-                                            },
-                                            modifier = Modifier.fillMaxWidth(),
-                                            enabled = !uiState.isLoading,
-                                            colors = ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.secondary
-                                            )
-                                        ) {
-                                            if (uiState.isLoading) {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.size(20.dp),
-                                                    color = MaterialTheme.colorScheme.onSecondary
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(16.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.Center
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Info,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp),
+                                                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(
+                                                        text = "Awaiting Approval",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            // Show match request button
+                                            Button(
+                                                onClick = {
+                                                    viewModel.createMatchRequest(
+                                                        itemId = item.id,
+                                                        itemOwnerId = item.userId,
+                                                        claimantUserId = currentUser.uid,
+                                                        requesterId = currentUser.uid,
+                                                        requesterName = currentUser.name,
+                                                        itemTitle = item.title
+                                                    )
+                                                },
+                                                modifier = Modifier.fillMaxWidth(),
+                                                enabled = !uiState.isLoading,
+                                                colors = ButtonDefaults.buttonColors(
+                                                    containerColor = MaterialTheme.colorScheme.secondary
                                                 )
-                                            } else {
-                                                Icon(
-                                                    Icons.Default.Info,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(if (item.status.name == "LOST") "I Have This Item" else "This Is My Item")
+                                            ) {
+                                                if (uiState.isLoading) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(20.dp),
+                                                        color = MaterialTheme.colorScheme.onSecondary
+                                                    )
+                                                } else {
+                                                    Icon(
+                                                        Icons.Default.Info,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(if (item.status.name == "LOST") "I Have This Item" else "This Is My Item")
+                                                }
                                             }
                                         }
                                     }
