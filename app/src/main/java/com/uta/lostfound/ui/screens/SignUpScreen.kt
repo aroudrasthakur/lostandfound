@@ -1,5 +1,7 @@
 package com.uta.lostfound.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.ClickableText
@@ -11,12 +13,15 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +35,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.uta.lostfound.viewmodel.LoginViewModel
+import com.uta.lostfound.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,12 +101,21 @@ fun SignUpScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color(0xFF001F3F))
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 40.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
+            // Splash icon at top of sign up screen
+            Image(
+                painter = painterResource(id = R.drawable.splash_icon),
+                contentDescription = "App Icon",
+                modifier = Modifier
+                    .size(120.dp)
+                    .padding(bottom = 8.dp)
+            )
             Spacer(modifier = Modifier.height(32.dp))
             
             // Signup Form Card
@@ -276,9 +291,9 @@ private fun SignUpFormCard(
                 trailingIcon = {
                     IconButton(onClick = onPasswordVisibilityToggle) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Lock else Icons.Default.Lock,
+                            imageVector = Icons.Default.Search,
                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                            tint = if (passwordVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -319,9 +334,9 @@ private fun SignUpFormCard(
                 trailingIcon = {
                     IconButton(onClick = onConfirmPasswordVisibilityToggle) {
                         Icon(
-                            imageVector = if (confirmPasswordVisible) Icons.Default.Lock else Icons.Default.Lock,
+                            imageVector = Icons.Default.Search,
                             contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
-                            tint = if (confirmPasswordVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -385,7 +400,7 @@ private fun BottomAuthPromptSignUp(
     val annotatedString = buildAnnotatedString {
         withStyle(
             style = SpanStyle(
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.White
             )
         ) {
             append(normalText)
@@ -394,7 +409,7 @@ private fun BottomAuthPromptSignUp(
         pushStringAnnotation(tag = "CLICKABLE", annotation = "CLICKABLE")
         withStyle(
             style = SpanStyle(
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.secondary,
                 fontWeight = FontWeight.SemiBold
             )
         ) {
