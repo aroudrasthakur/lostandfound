@@ -40,6 +40,8 @@ import com.uta.lostfound.data.service.PlaceSuggestion
 import com.uta.lostfound.ui.components.LocationAutocompleteField
 import com.uta.lostfound.viewmodel.LoginViewModel
 import com.uta.lostfound.viewmodel.ReportViewModel
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -82,6 +84,22 @@ fun ReportItemScreen(
         if (success && cameraImageUri != null) {
             imageUris = imageUris + cameraImageUri!!
             cameraImageUri = null
+        }
+    }
+    
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Permission granted, launch camera
+            val photoFile = createImageFile(context)
+            cameraImageUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                photoFile
+            )
+            cameraLauncher.launch(cameraImageUri!!)
         }
     }
     
@@ -232,13 +250,25 @@ fun ReportItemScreen(
             ) {
                 Button(
                     onClick = { 
-                        val photoFile = createImageFile(context)
-                        cameraImageUri = FileProvider.getUriForFile(
+                        // Check if camera permission is already granted
+                        val hasPermission = ContextCompat.checkSelfPermission(
                             context,
-                            "${context.packageName}.fileprovider",
-                            photoFile
-                        )
-                        cameraLauncher.launch(cameraImageUri!!)
+                            android.Manifest.permission.CAMERA
+                        ) == PackageManager.PERMISSION_GRANTED
+                        
+                        if (hasPermission) {
+                            // Permission already granted, launch camera directly
+                            val photoFile = createImageFile(context)
+                            cameraImageUri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                photoFile
+                            )
+                            cameraLauncher.launch(cameraImageUri!!)
+                        } else {
+                            // Request camera permission
+                            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                        }
                     },
                     modifier = Modifier.weight(1f)
                 ) {

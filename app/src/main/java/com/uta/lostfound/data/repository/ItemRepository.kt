@@ -1,17 +1,17 @@
 package com.uta.lostfound.data.repository
 
+import android.content.Context
 import android.net.Uri
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.storage.FirebaseStorage
 import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemStatus
+import com.uta.lostfound.data.service.ImageUploadService
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
-class ItemRepository {
+class ItemRepository(context: Context? = null) {
     private val firestore = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
+    private val imageUploadService: ImageUploadService? = context?.let { ImageUploadService(it) }
 
     suspend fun reportLostItem(item: Item, imageUri: Uri?): Result<Item> {
         return try {
@@ -157,11 +157,7 @@ class ItemRepository {
     suspend fun deleteFoundItem(itemId: String) = deleteItem(itemId, ItemStatus.FOUND)
 
     private suspend fun uploadImage(imageUri: Uri, itemId: String, type: String): String {
-        val fileName = "${UUID.randomUUID()}.jpg"
-        val storageRef = storage.reference
-            .child("items/$type/$itemId/$fileName")
-        
-        storageRef.putFile(imageUri).await()
-        return storageRef.downloadUrl.await().toString()
+        // Upload to ImgBB (free image hosting)
+        return imageUploadService?.uploadImage(imageUri) ?: ""
     }
 }

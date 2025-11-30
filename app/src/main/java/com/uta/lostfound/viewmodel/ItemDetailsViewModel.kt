@@ -8,6 +8,7 @@ import com.uta.lostfound.data.model.Match
 import com.uta.lostfound.data.model.MatchStatus
 import com.uta.lostfound.data.repository.ItemRepository
 import com.uta.lostfound.data.repository.MatchRepository
+import com.uta.lostfound.data.repository.MetricsRepository
 import com.uta.lostfound.data.repository.NotificationRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ class ItemDetailsViewModel : ViewModel() {
     private val itemRepository = ItemRepository()
     private val notificationRepository = NotificationRepository()
     private val matchRepository = MatchRepository()
+    private val metricsRepository = MetricsRepository()
     
     private val _uiState = MutableStateFlow(ItemDetailsUiState())
     val uiState: StateFlow<ItemDetailsUiState> = _uiState
@@ -106,14 +108,17 @@ class ItemDetailsViewModel : ViewModel() {
                 itemRepository.deleteFoundItem(itemId)
             }
             
-            _uiState.value = if (result.isSuccess) {
-                _uiState.value.copy(
+            if (result.isSuccess) {
+                // Update metrics after successful item deletion
+                metricsRepository.updateMetrics()
+                
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     deleteSuccess = true,
                     error = null
                 )
             } else {
-                _uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = result.exceptionOrNull()?.message ?: "Failed to delete item"
                 )
@@ -200,6 +205,9 @@ class ItemDetailsViewModel : ViewModel() {
             android.util.Log.d("ItemDetailsViewModel", "approveMatch result - success: ${result.isSuccess}")
             
             if (result.isSuccess) {
+                // Update metrics after successful match approval
+                metricsRepository.updateMetrics()
+                
                 // Reload the item to get updated status
                 val itemId = _uiState.value.item?.id ?: ""
                 android.util.Log.d("ItemDetailsViewModel", "Reloading item: $itemId")

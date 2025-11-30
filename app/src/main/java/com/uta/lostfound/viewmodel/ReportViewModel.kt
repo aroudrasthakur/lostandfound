@@ -1,7 +1,8 @@
 package com.uta.lostfound.viewmodel
 
+import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -9,6 +10,7 @@ import com.uta.lostfound.data.model.Item
 import com.uta.lostfound.data.model.ItemCategory
 import com.uta.lostfound.data.model.ItemStatus
 import com.uta.lostfound.data.repository.ItemRepository
+import com.uta.lostfound.data.repository.MetricsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -26,8 +28,9 @@ data class ReportUiState(
     val date: Timestamp = Timestamp(Date())
 )
 
-class ReportViewModel : ViewModel() {
-    private val itemRepository = ItemRepository()
+class ReportViewModel(application: Application) : AndroidViewModel(application) {
+    private val itemRepository = ItemRepository(application.applicationContext)
+    private val metricsRepository = MetricsRepository()
     private val auth = FirebaseAuth.getInstance()
     
     private val _uiState = MutableStateFlow(ReportUiState())
@@ -108,14 +111,17 @@ class ReportViewModel : ViewModel() {
                 )
             }
             
-            _uiState.value = if (result.isSuccess) {
-                _uiState.value.copy(
+            if (result.isSuccess) {
+                // Update metrics after successful item report
+                metricsRepository.updateMetrics()
+                
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     isSuccess = true,
                     error = null
                 )
             } else {
-                _uiState.value.copy(
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
                     error = result.exceptionOrNull()?.message ?: "Failed to report item"
                 )
