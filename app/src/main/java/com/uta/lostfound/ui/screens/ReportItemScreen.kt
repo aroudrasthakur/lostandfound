@@ -377,11 +377,6 @@ fun ReportItemScreen(
             Button(
                 onClick = {
                     // Validate location before submitting
-                    if (selectedLocation == null && location.isNotBlank()) {
-                        locationError = "Please select a valid location from the suggestions"
-                        return@Button
-                    }
-                    
                     if (location.isBlank()) {
                         locationError = "Location is required"
                         return@Button
